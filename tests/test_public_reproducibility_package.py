@@ -39,10 +39,16 @@ def test_publication_package_files_exist():
         ROOT / "figures/paper4_higgs_zero_mode_profiles.svg",
         ROOT / "figures/paper4_quartic_overlap_curve.svg",
         ROOT / "arxiv_submission_source.zip",
+        ROOT / "wolfram/Higgs_Quartic_Overlap_Verification.wl",
+        ROOT / "wolfram/BranchA_Stabilizer_Hypercharge_Audit.wl",
+        ROOT / "wolfram/Projection_BRST_Skeleton.wl",
         PACKET / "paper4_higgs_overlap_scan_v01.csv",
         PACKET / "paper4_quartic_sensitivity_audit_v01.csv",
         PACKET / "paper4_higgs_module_summary_v01.csv",
         PACKET / "paper4_readiness_table_v01.csv",
+        PACKET / "wolfram_audit_logs/Higgs_Quartic_Overlap_Verification.log",
+        PACKET / "wolfram_audit_logs/BranchA_Stabilizer_Hypercharge_Audit.log",
+        PACKET / "wolfram_audit_logs/Projection_BRST_Skeleton.log",
     ]
     missing = [str(path.relative_to(ROOT)) for path in required if not path.exists()]
     assert missing == []
@@ -96,3 +102,15 @@ def test_no_private_theory_dump():
     ).stdout.splitlines()
     assert not any(path.startswith("source_material/") for path in tracked)
     assert not any("tau-core-theory" in path for path in tracked)
+
+
+def test_wolfram_audit_logs_record_expected_checks():
+    overlap = (PACKET / "wolfram_audit_logs/Higgs_Quartic_Overlap_Verification.log").read_text(encoding="utf-8")
+    stabilizer = (PACKET / "wolfram_audit_logs/BranchA_Stabilizer_Hypercharge_Audit.log").read_text(encoding="utf-8")
+    brst = (PACKET / "wolfram_audit_logs/Projection_BRST_Skeleton.log").read_text(encoding="utf-8")
+    assert "quarticIntegralCheck = True" in overlap
+    assert "I4(3/10) = 0.133756" in overlap
+    assert "T_Sigma == -T_Y = True" in stabilizer
+    assert "nu_i = 3 |Y_i| / 5 remains a theorem-candidate" in stabilizer
+    assert "Q_D h_D = 0 check = True" in brst
+    assert "does not prove anomaly freedom" in brst

@@ -28,6 +28,7 @@ to regenerate this manuscript.
 paper4_submission_source/                         LaTeX source, bibliography, figures, and compiled PDF
 figures/                                          Regenerated SVG figures used by the manuscript
 studies/tau_core_higgs_module_v01/                Paper 4 regeneration script and seed packet
+wolfram/                                         Optional Wolfram Language audit scripts
 tests/                                            Public reproducibility checks
 arxiv_submission_source.zip                       arXiv-ready source package
 ```
@@ -57,6 +58,19 @@ The generator uses `tectonic` for PDF compilation when available. If `tectonic`
 is missing, the TeX source, figures, diagnostic tables, and arXiv ZIP are still
 regenerated, but the PDF readiness row records the compiler blocker.
 
+Optional Wolfram Language checks can be run when Wolfram Engine is activated:
+
+```bash
+wolframscript -file wolfram/Higgs_Quartic_Overlap_Verification.wl
+wolframscript -file wolfram/BranchA_Stabilizer_Hypercharge_Audit.wl
+wolframscript -file wolfram/Projection_BRST_Skeleton.wl
+```
+
+These scripts verify the symbolic/numeric overlap integral, the Branch A
+stabilizer/hypercharge normalization, and the BRST skeleton. They do not prove
+the `nu_i=3|Y_i|/5` rule, anomaly freedom, regulator safety, or radiative
+stability.
+
 ## Main Outputs
 
 - `paper4_submission_source/main.tex`
@@ -66,6 +80,7 @@ regenerated, but the PDF readiness row records the compiler blocker.
 - `figures/*.svg`
 - `arxiv_submission_source.zip`
 - `studies/tau_core_higgs_module_v01/packet_v01_seed/*.csv`
+- `studies/tau_core_higgs_module_v01/packet_v01_seed/wolfram_audit_logs/*.log`
 
 The packet includes a quartic-overlap sensitivity audit and an explicit
 `nu_rule` readiness blocker. The value `I4(3/10)` should therefore be read as

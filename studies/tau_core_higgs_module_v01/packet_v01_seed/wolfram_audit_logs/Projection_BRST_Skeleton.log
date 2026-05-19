@@ -1,0 +1,4 @@
+s^2 H skeleton = 0
+Q_D h_D = 0 check = True
+O0 = Q_D^† Q_D
+This notebook does not prove anomaly freedom, regulator safety, or radiative stability.

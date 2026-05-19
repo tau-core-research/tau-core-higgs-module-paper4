@@ -1,0 +1,7 @@
+Tr[T_Sigma] = 0
+Tr[T_Sigma^2] = 1/2
+Tr[T_Y^2] = 1/2
+T_Sigma == -T_Y = True
+T_Sigma eigenvalue multiplicities = {{1/Sqrt[15], 3}, {-1/2*Sqrt[3/5], 2}}
+3*(2) + 2*(-3) = 0
+main_blocker: nu_i = 3 |Y_i| / 5 remains a theorem-candidate
