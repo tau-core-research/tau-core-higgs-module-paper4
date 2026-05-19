@@ -4,6 +4,8 @@ This repository is the public reproducibility package for:
 
 **A Branch A cohomological Higgs module: stabilizer-derived quartic overlap and lightness-protection gates**
 
+Archived reproducibility package DOI: [10.5281/zenodo.20285909](https://doi.org/10.5281/zenodo.20285909)
+
 The manuscript is a cautious Branch A projection/cohomology Higgs-module paper.
 It does not claim a completed Standard Model derivation, a completed theory of
 everything, or empirical validation of the broader parent framework. It isolates

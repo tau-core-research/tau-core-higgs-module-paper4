@@ -337,6 +337,8 @@ We describe a constrained Branch A projection/cohomology Higgs module in which t
 \section{{Scope and Claim Boundary}}
 This manuscript isolates one theoretical module: a possible origin for a Higgs-scale quartic overlap and a possible cohomological lightness-protection route. The paper does not claim that the Standard Model, gravity, or a complete parent projection theory has been derived. The result should be read as a reproducible candidate mechanism with explicit proof obligations.
 
+The full Paper 4 reproducibility package, including the source-minimal repository, regeneration script, Wolfram audit scripts, compiled PDF, and arXiv source package, is archived at \href{{https://doi.org/10.5281/zenodo.20285909}}{{\nolinkurl{{doi:10.5281/zenodo.20285909}}}}. The package can be regenerated with the commands listed in the repository README.
+
 \section{{Minimal Projection Setup}}
 The tau coordinate is treated as an internal projection coordinate rather than an ordinary fifth spacetime dimension. A parent Higgs profile is written as
 \begin{{equation}}
