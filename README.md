@@ -12,6 +12,12 @@ everything, or empirical validation of the broader parent framework. It isolates
 a Higgs-sector mechanism with explicit assumptions, sensitivity audits, and
 falsification gates.
 
+The current version also includes a compact parent-selection refinement: the
+minimal `3+2` carrier is treated through conditional gates involving two
+protected visible clusters, `epsilon_3`/`epsilon_2` invariant roles, and an
+invariant/anomaly bridge. These are reproducible mechanism gates, not a
+derivation of the Standard Model representation content.
+
 ## Author And Research Workflow
 
 I am an independent researcher using an AI-assisted workflow to develop reproducible diagnostic tests around projection-sensitive residual hypotheses. I am not claiming expert-level validation. I would value criticism on whether the proposed gate/falsification structure is scientifically meaningful.
@@ -97,8 +103,9 @@ The following files are generated locally by the reproduction command:
 - `studies/tau_core_higgs_module_v01/packet_v01_seed/wolfram_audit_logs/*.log`
 
 The packet includes a quartic-overlap sensitivity audit and an explicit
-`nu_rule` readiness blocker. The value `I4(3/10)` should therefore be read as
-mathematical motivation, not standalone evidence.
+`nu_rule` readiness blocker, plus a parent-selection readiness row. The value
+`I4(3/10)` should therefore be read as mathematical motivation, not standalone
+evidence.
 
 ## Scope
 

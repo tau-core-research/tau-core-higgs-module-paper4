@@ -78,6 +78,11 @@ def test_submission_source_claim_boundaries():
     assert "concrete conditional mathematical result" in tex
     assert "Branch A projection/cohomology Higgs module" in tex
     assert "Theorem Status Summary" in tex
+    assert "Parent-Selection Refinements" in tex
+    assert "two protected visible clusters" in tex
+    assert "\\epsilon_3\\text{ closure}+\\epsilon_2\\text{ pairing}" in tex
+    assert "invariant/anomaly bridge" in tex
+    assert "not representation derivation" in tex
     assert "unoriented $T_Y$ line quotient" in tex
     assert "paper4_mechanism_flow.pdf" in tex
     assert "Candidate Route To The Localization Rule" in tex
@@ -103,8 +108,11 @@ def test_submission_source_claim_boundaries():
 def test_numerology_and_nu_rule_gates_are_explicit():
     sensitivity = read_csv(PACKET / "paper4_quartic_sensitivity_audit_v01.csv")
     readiness = {row["Item"]: row for row in read_csv(PACKET / "paper4_readiness_table_v01.csv")}
+    summary = {row["quantity"]: row for row in read_csv(PACKET / "paper4_higgs_module_summary_v01.csv")}
     assert any(row["band"] == "moderate" for row in sensitivity)
     assert readiness["nu_rule"]["Status"] == "main_blocker"
+    assert readiness["branch_a_parent_selection"]["Status"] == "conditional_gate_chain"
+    assert summary["parent_selection_gate_count"]["value"] == "5"
     assert "not evidence by itself" in sensitivity[0]["interpretation"]
 
 

@@ -126,6 +126,12 @@ def summary_rows() -> list[dict[str, object]]:
             "interpretation": "continuum threshold nu_D * M_tau",
             "guardrail": GUARDRAIL,
         },
+        {
+            "quantity": "parent_selection_gate_count",
+            "value": "5",
+            "interpretation": "two-block stability, parent selection, multiplicity selection, invariant tensor, invariant/anomaly bridge",
+            "guardrail": GUARDRAIL,
+        },
     ]
 
 
@@ -172,7 +178,13 @@ def readiness_rows(pdf_status: str = "not_run") -> list[dict[str, object]]:
         {
             "Item": "nu_rule",
             "Status": "main_blocker",
-            "Detail": "The rule nu_i=3|Y_i|/5 must be derived from a stabilizer, variational, index, or anomaly argument before the module can be promoted.",
+            "Detail": "The rule nu_i=3|Y_i|/5 is now supported by parent-selection and wall-route gates, but still requires parent derivation.",
+            "Guardrail": GUARDRAIL,
+        },
+        {
+            "Item": "branch_a_parent_selection",
+            "Status": "conditional_gate_chain",
+            "Detail": "Two-block stability, minimal 3+2 carrier, epsilon_3/epsilon_2 invariant roles, and the invariant/anomaly bridge are recorded as conditional gates.",
             "Guardrail": GUARDRAIL,
         },
         {
@@ -399,6 +411,10 @@ The limited claim tested here is narrower but meaningful. Among linear hyperchar
 \textbf{{Claim}} & \textbf{{Status in this manuscript}}\\
 \midrule
 $3+2$ stabilizer & derived within the minimal Branch A carrier\\
+two-block visible-sector selection & conditional parent/Hessian gate\\
+minimal $3+2$ carrier & conditional on two protected color/weak-support clusters\\
+invariant roles $\epsilon_3,\epsilon_2$ & conditional minimality gate\\
+invariant/anomaly bridge & consistency audit; not representation derivation\\
 $\kappa_\tau^2=3/5$ normalization & derived from canonical hypercharge normalization\\
 unique Abelian direction & derived within the traceless $3+2$ Branch A centralizer\\
 unoriented $T_Y$ line quotient & theorem-candidate, with projector audit\\
@@ -417,6 +433,39 @@ top determinant / radiative stability & open gate\\
 \caption{{Mechanism route and proof-gate structure. The first steps are controlled algebraic reductions; the localization rule and physical interpretation remain conditional on the parent-action gates.}}
 \label{{fig:mechanism-flow}}
 \end{{figure}}
+
+\section{{Parent-Selection Refinements}}
+Recent parent-theory audits sharpen the status of the $3+2$ input.  They do
+not prove the parent action, but they reduce the apparent arbitrariness of the
+Branch A carrier.  The current conditional chain is
+\begin{{equation}}
+\text{{two protected visible clusters}}
+\rightarrow
+\text{{minimal }}3+2
+\rightarrow
+\epsilon_3\text{{ closure}}+\epsilon_2\text{{ pairing}}
+\rightarrow
+\text{{anomaly-safe target gate}} .
+\end{{equation}}
+The first step is a stability/cohomology requirement: the parent Hessian should
+produce exactly two protected visible light clusters, while any additional
+parent clusters must be Hessian-heavy or quotient-null.  If an extra light
+visible cluster remains, the low-energy block-scalar centralizer gains extra
+freedom and the clean Branch A hypercharge line is no longer unique.
+
+Given two visible clusters, the minimal carrier with one color-like support
+role and one weak-like support role is $3+2$.  A sharper invariant reading is
+that the larger block is the first one with a three-index antisymmetric
+closure tensor $\epsilon_3$, while the smaller block is the first one with a
+two-index antisymmetric pairing tensor $\epsilon_2$.  Larger blocks are not
+excluded by this manuscript, but they add tensor and centralizer freedom that
+would need a parent-derived penalty or quotient rule.
+
+The invariant/anomaly bridge is also conditional.  The declared $3+2$ target
+is anomaly-safe, while removing the $3\times2$ bifundamental bridge or adding
+an extra unpaired light doublet fails the anomaly/chirality gate.  This shows
+which structures must be derived together.  It does not derive the Standard
+Model representation content.
 
 \section{{Candidate Route To The Localization Rule}}
 The localization postulate can be sharpened into a candidate derivation route.
@@ -632,6 +681,7 @@ This section is a roadmap calculation: the top determinant must still be complet
 The current package reproduces:
 \begin{{itemize}}
 \item a minimal $3+2$ stabilizer-compatible hypercharge direction;
+\item conditional parent-selection gates linking two protected visible clusters, $\epsilon_3/\epsilon_2$ invariant roles, and the anomaly-safe target;
 \item the Branch A working exponent $\nu_D=3/10$ once the $\nu_i=3|Y_i|/5$ rule is assumed;
 \item the normalized $\operatorname{{sech}}^{{3/10}}$ zero mode;
 \item the quartic overlap $I_4(3/10)={i4_d:.6f}$;
@@ -641,7 +691,8 @@ It does not reproduce:
 \begin{{itemize}}
 \item the full Standard Model;
 \item the Yukawa hierarchy;
-\item anomaly cancellation from the parent construction;
+\item anomaly cancellation from a derived parent representation construction;
+\item derivation of the $3\times2$ bridge and singlet/color channels from the parent action;
 \item radiative stability;
 \item the measured Higgs mass from a completed top determinant;
 \item a collider-ready heavy-sector spectrum.
@@ -673,6 +724,12 @@ would need to show that the Branch A regular background is the unoriented
 hypercharge line/projector, that non-hypercharge leakage modes are
 Hessian-positive or quotient-null, and that the reduced wall functional is the
 minimal BPS two-vacuum functional in the canonical tau measure.
+\item \textbf{{Parent-selection and representation derivation.}} The current
+packet narrows the $3+2$ carrier to a conditional chain of two protected
+visible clusters, minimal $3+2$ support, $\epsilon_3/\epsilon_2$ invariant
+roles, and an invariant/anomaly bridge. A proof must still derive those roles,
+the $3\times2$ bridge, and the singlet/color channels from the parent
+cohomology or Hessian structure rather than declaring an SM-like target.
 \item \textbf{{BRST/anomaly/regulator consistency.}} The projection-BRST
 skeleton explains how a quotient could protect the visible zero mode, but the
 present packet checks only the algebraic skeleton. A proof must still define
@@ -704,6 +761,8 @@ This is a falsifiable target, not a confirmed prediction. The module weakens if 
 The module would fail if any of the following gates fail:
 \begin{{itemize}}
 \item the Branch A projection metric rule $\nu_i=3|Y_i|/5$ cannot be derived;
+\item the two-block / $3+2$ / invariant-role chain cannot be derived from the parent action or stability structure;
+\item the $3\times2$ bridge and anomaly-safe visible target cannot be obtained without post-hoc representation choice;
 \item the parent quartic is not canonical or requires large tuning;
 \item the projection-BRST quotient is anomalous or regulator-dependent;
 \item a visible Higgs mass is unavoidable at $\delta_\star=0$;
@@ -712,7 +771,7 @@ The module would fail if any of the following gates fail:
 \end{{itemize}}
 
 \section{{Conclusion}}
-The Branch A Higgs module links a $3+2$ stabilizer, hypercharge normalization, a $\operatorname{{sech}}^{{3/10}}$ visible zero mode, and a quartic overlap requiring an order-one parent quartic. The paper establishes a compact, reproducible mechanism target: if the Branch A localization rule is derived, the Higgs quartic is mapped to a natural parent-scale coupling rather than an extreme hierarchy. It does not establish the full parent theory or solve the Higgs hierarchy problem. The next paper-grade step is to derive the $\nu_i=3|Y_i|/5$ rule, complete the projection-BRST and top-determinant gates, and compare the implied heavy-sector window against collider constraints.
+The Branch A Higgs module links a $3+2$ stabilizer, hypercharge normalization, a $\operatorname{{sech}}^{{3/10}}$ visible zero mode, and a quartic overlap requiring an order-one parent quartic. The paper establishes a compact, reproducible mechanism target: if the Branch A localization rule is derived, the Higgs quartic is mapped to a natural parent-scale coupling rather than an extreme hierarchy. The newest parent-selection refinements make the $3+2$ input less arbitrary by linking it to two protected visible clusters, $\epsilon_3/\epsilon_2$ invariant roles, and an invariant/anomaly bridge. The manuscript still does not establish the full parent theory or solve the Higgs hierarchy problem. The next paper-grade step is to derive the two-block representation structure and the $\nu_i=3|Y_i|/5$ rule from the parent action, complete the projection-BRST and top-determinant gates, and compare the implied heavy-sector window against collider constraints.
 
 \bibliographystyle{{plain}}
 \bibliography{{references}}
