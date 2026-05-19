@@ -1,0 +1,4 @@
+band,nu_min,nu_max,I4_min,I4_max,lambda_tau_required_min,lambda_tau_required_max,interpretation,guardrail
+tight,0.280000,0.320000,0.126074122,0.141277728,0.913095090,1.023207599,"order-one parent quartic sensitivity audit, not evidence by itself",higgs_module_candidate_not_standard_model_derivation
+moderate,0.250000,0.350000,0.114236645,0.152270638,0.847175802,1.129234841,"order-one parent quartic sensitivity audit, not evidence by itself",higgs_module_candidate_not_standard_model_derivation
+broad,0.200000,0.400000,0.093625124,0.169868001,0.759413189,1.377835297,"order-one parent quartic sensitivity audit, not evidence by itself",higgs_module_candidate_not_standard_model_derivation

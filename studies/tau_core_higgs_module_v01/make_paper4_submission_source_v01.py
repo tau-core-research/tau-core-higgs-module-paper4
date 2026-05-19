@@ -49,7 +49,7 @@ def sech(x: float) -> float:
 def write_csv(path: Path, rows: list[dict[str, object]], columns: list[str]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=columns)
+        writer = csv.DictWriter(handle, fieldnames=columns, lineterminator="\n")
         writer.writeheader()
         for row in rows:
             writer.writerow({column: row.get(column, "") for column in columns})
@@ -127,6 +127,32 @@ def summary_rows() -> list[dict[str, object]]:
     ]
 
 
+def sensitivity_rows() -> list[dict[str, object]]:
+    rows = []
+    for label, low, high in [
+        ("tight", 0.28, 0.32),
+        ("moderate", 0.25, 0.35),
+        ("broad", 0.20, 0.40),
+    ]:
+        samples = [low + (high - low) * index / 200.0 for index in range(201)]
+        i4_values = [i4(nu) for nu in samples]
+        lambda_required = [PHYSICAL_LAMBDA_H / value for value in i4_values]
+        rows.append(
+            {
+                "band": label,
+                "nu_min": f"{low:.6f}",
+                "nu_max": f"{high:.6f}",
+                "I4_min": f"{min(i4_values):.9f}",
+                "I4_max": f"{max(i4_values):.9f}",
+                "lambda_tau_required_min": f"{min(lambda_required):.9f}",
+                "lambda_tau_required_max": f"{max(lambda_required):.9f}",
+                "interpretation": "order-one parent quartic sensitivity audit, not evidence by itself",
+                "guardrail": GUARDRAIL,
+            }
+        )
+    return rows
+
+
 def readiness_rows(pdf_status: str = "not_run") -> list[dict[str, object]]:
     return [
         {
@@ -137,8 +163,14 @@ def readiness_rows(pdf_status: str = "not_run") -> list[dict[str, object]]:
         },
         {
             "Item": "quartic_overlap",
-            "Status": "reproducible",
-            "Detail": "I4(3/10) generated from gamma-function expression.",
+            "Status": "reproducible_but_not_evidence_alone",
+            "Detail": "I4(3/10) generated from gamma-function expression and audited for sensitivity.",
+            "Guardrail": GUARDRAIL,
+        },
+        {
+            "Item": "nu_rule",
+            "Status": "main_blocker",
+            "Detail": "The rule nu_i=3|Y_i|/5 must be derived from a stabilizer, variational, index, or anomaly argument before the module can be promoted.",
             "Guardrail": GUARDRAIL,
         },
         {
@@ -222,25 +254,29 @@ def save_figure(fig: plt.Figure, stem: str) -> None:
 def manuscript_tex() -> str:
     i4_d = i4(NU_D)
     lambda_tau_required = PHYSICAL_LAMBDA_H / i4_d
+    moderate_samples = [0.25 + 0.10 * index / 200.0 for index in range(201)]
+    lambda_values = [PHYSICAL_LAMBDA_H / i4(nu) for nu in moderate_samples]
+    lambda_lo = min(lambda_values)
+    lambda_hi = max(lambda_values)
     return rf"""\documentclass[11pt]{{article}}
 \usepackage[margin=1in]{{geometry}}
 \usepackage{{amsmath,amssymb,booktabs,graphicx,hyperref,xurl}}
 \usepackage{{authblk}}
 \hypersetup{{colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue}}
-\title{{A Tau Core Branch A Higgs-sector module: stabilizer-derived quartic overlap and cohomological lightness protection}}
+\title{{A Branch A cohomological Higgs module: stabilizer-derived quartic overlap and lightness-protection gates}}
 \author{{Jozsef Olcsak}}
 \date{{May 19, 2026}}
 \begin{{document}}
 \maketitle
 
 \begin{{abstract}}
-We describe a constrained Tau Core Branch A Higgs-sector module in which the observed four-dimensional Higgs is treated as the visible cohomological projection of a tau-profiled parent field. The central reproducible calculation links a minimal $3+2$ stabilizer, the canonical hypercharge direction, a Higgs localization exponent $\nu_D=3/10$, and a zero-mode quartic overlap $I_4(3/10)={i4_d:.6f}$. This value is close to the observed Higgs quartic scale after a small threshold/running correction for a canonical parent quartic. The construction is presented as a candidate mechanism and validation roadmap. It is not a completed Standard Model derivation, not a proof of Tau Core, and not an empirical claim.
+We describe a constrained Branch A cohomological Higgs module, motivated by a Tau Core projection framework, in which the observed four-dimensional Higgs is treated as the visible projection of a tau-profiled parent field. The central reproducible calculation links a minimal $3+2$ stabilizer, the canonical hypercharge direction, a Higgs localization exponent $\nu_D=3/10$, and a zero-mode quartic overlap $I_4(3/10)={i4_d:.6f}$. The result is framed as an order-one parent-quartic requirement, not as evidence by numerical coincidence. The construction is a candidate mechanism and validation roadmap. It is not a completed Standard Model derivation, not a proof of Tau Core, and not an empirical claim.
 \end{{abstract}}
 
 \section{{Scope and Claim Boundary}}
-This manuscript isolates one theoretical module: a possible origin for the Higgs quartic scale and Higgs lightness in a Tau Core projection framework. The paper does not claim that the Standard Model, gravity, or the full Tau Core parent theory has been derived. The result should be read as a reproducible candidate mechanism with explicit proof obligations.
+This manuscript isolates one theoretical module: a possible origin for a Higgs-scale quartic overlap and a possible cohomological lightness-protection route. The paper does not claim that the Standard Model, gravity, or the full Tau Core parent theory has been derived. The result should be read as a reproducible candidate mechanism with explicit proof obligations.
 
-\section{{Minimal Tau Core Setup}}
+\section{{Minimal Projection Setup}}
 The tau coordinate is treated as an internal projection coordinate rather than an ordinary fifth spacetime dimension. A parent Higgs profile is written as
 \begin{{equation}}
 H(x^\mu,x),
@@ -249,7 +285,7 @@ where $x^\mu$ is ordinary four-dimensional spacetime and $x$ is the internal tau
 \begin{{equation}}
 \phi(x^\mu)=\Pi_{{\rm vis}}[H]=\int h_D(x)H(x^\mu,x)\,dx .
 \end{{equation}}
-Projection-null directions have the form $Q_D^\dagger\Lambda$ and are quotiented out:
+Projection-null directions have the form $Q_D^\dagger\Lambda$ and are proposed to be quotiented out:
 \begin{{equation}}
 H\sim H+Q_D^\dagger\Lambda .
 \end{{equation}}
@@ -274,6 +310,10 @@ The Branch A localization rule is treated here as an assumption/theorem-candidat
 \begin{{equation}}
 \nu_i=\frac35 |Y_i| .
 \end{{equation}}
+This is the main theoretical blocker of the manuscript. The rule must eventually be derived from a stabilizer-compatible metric, a variational extremum, an index-theoretic constraint, anomaly matching, or another independent principle. Until such a derivation exists, the quartic-overlap result should not be read as a derivation of the Higgs quartic.
+
+The limited claim tested here is narrower. Among linear hypercharge-localization rules $\nu_i=c|Y_i|$, the value $c=3/5$ is the Branch A working value that keeps the Higgs mode localized and gives an order-one parent quartic requirement. This observation motivates the gate; it does not close it.
+
 For the Higgs doublet, $Y_H=1/2$, giving
 \begin{{equation}}
 \nu_D=\frac35\cdot\frac12=\frac3{{10}} .
@@ -294,7 +334,7 @@ h_D(x)=\mathcal{{N}}_D\operatorname{{sech}}^{{3/10}}x .
 \label{{fig:zero-mode-profiles}}
 \end{{figure}}
 
-\section{{Quartic Overlap}}
+\section{{Quartic Overlap And Sensitivity Audit}}
 For a normalized profile $h_\nu$, the quartic localization functional is
 \begin{{equation}}
 I_4(\nu)=\int h_\nu^4 dx
@@ -312,12 +352,14 @@ For $\lambda_H\simeq0.129$, the implied parent quartic is
 \begin{{equation}}
 \lambda_\tau\simeq {lambda_tau_required:.3f}.
 \end{{equation}}
-This is close enough to a canonical parent value to motivate a threshold/running calculation, but the canonical parent quartic is not derived in this manuscript.
+The important point is not the exact closeness to one. The safer statement is that the overlap requires an order-one parent quartic rather than an extreme hierarchy. The canonical parent quartic is not derived in this manuscript.
+
+To reduce the numerology risk, the generator writes an explicit sensitivity table. In the moderate window $0.25\leq\nu\leq0.35$, the required parent quartic ranges approximately from ${lambda_lo:.3f}$ to ${lambda_hi:.3f}$. This means the mechanism is not a delta-function coincidence at $\nu=0.3$, but it also does not by itself prove the hypercharge-localization rule.
 
 \begin{{figure}}[htbp]
 \centering
 \includegraphics[width=0.82\linewidth]{{figures/paper4_quartic_overlap_curve.pdf}}
-\caption{{Quartic localization overlap as a function of the tau-localization exponent. The Branch A Higgs value $\nu_D=3/10$ lands near the observed Higgs quartic scale for an order-one parent quartic.}}
+\caption{{Quartic localization overlap as a function of the tau-localization exponent. The Branch A Higgs value $\nu_D=3/10$ is marked, but the figure should be read as a sensitivity audit rather than as standalone evidence.}}
 \label{{fig:quartic-overlap}}
 \end{{figure}}
 
@@ -330,7 +372,7 @@ At the exact cohomological point the critical operator is factorized,
 \begin{{equation}}
 \mathcal{{O}}_0=Q_D^\dagger Q_D,
 \end{{equation}}
-so the visible zero mode is massless. A local parent mass $\int H^\dagger H\,dx$ does not descend to the quotient because it is not invariant under the vertical redundancy. This is the proposed lightness-protection mechanism, but a full anomaly and regulator proof remains open.
+so the visible zero mode is massless. A local parent mass $\int H^\dagger H\,dx$ does not descend to the quotient because it is not invariant under the vertical redundancy. This is only a possible lightness-protection route. The current manuscript does not solve the Higgs hierarchy problem. A complete treatment would require the Hilbert-space domain, nilpotency, regulator, anomaly, and Ward-identity analysis. Here the Projection-BRST language is retained as a roadmap gate, not as a completed proof.
 
 \section{{Controlled Top/Flavor Deformation}}
 The leading cohomology-breaking deformation is written as
@@ -345,7 +387,40 @@ and therefore
 \begin{{equation}}
 \mu_H^2=\frac9{{80}}\delta_\star M_\tau^2 .
 \end{{equation}}
-This section is a roadmap calculation: the top determinant must still be completed before the deformation can be promoted to a derived prediction.
+This section is a roadmap calculation: the top determinant must still be completed before the deformation can be promoted to a derived prediction. In particular, the manuscript does not yet prove radiative stability. The top/flavor determinant must show that mismatch-independent and linear mass terms are absent or quotient-trivial.
+
+\section{{What Is Reproduced And What Is Not}}
+The current package reproduces:
+\begin{{itemize}}
+\item a minimal $3+2$ stabilizer-compatible hypercharge direction;
+\item the Branch A working exponent $\nu_D=3/10$ once the $\nu_i=3|Y_i|/5$ rule is assumed;
+\item the normalized $\operatorname{{sech}}^{{3/10}}$ zero mode;
+\item the quartic overlap $I_4(3/10)={i4_d:.6f}$;
+\item an order-one parent-quartic requirement and a TeV-scale deformation estimate.
+\end{{itemize}}
+It does not reproduce:
+\begin{{itemize}}
+\item the full Standard Model;
+\item the Yukawa hierarchy;
+\item anomaly cancellation from the parent construction;
+\item radiative stability;
+\item the measured Higgs mass from a completed top determinant;
+\item a collider-ready heavy-sector spectrum.
+\end{{itemize}}
+
+\section{{Why This Is Not Just Numerology}}
+The quartic-overlap coincidence alone is not evidence. The module becomes scientifically interesting only if the gates are passed in the right order: first derive the hypercharge-localization rule, then prove the quotient/anomaly safety, then complete the top determinant, and only then compare the resulting heavy-sector predictions to collider constraints. Without those gates, the value $I_4(3/10)$ should be treated as a compact mathematical motivation rather than as physical validation.
+
+\section{{Near-Term Falsifiable Prediction}}
+The current module predicts a narrow kind of future test rather than an already validated signal. If the top/flavor deformation gate is completed with a natural spurion $\delta_\star\sim10^{-3}$, the same equations imply a parent scale $M_\tau$ in the multi-TeV range and a Higgs-sector spectral threshold
+\begin{{equation}}
+m_{{\rm gap}}\simeq\nu_D M_\tau \sim 2\text{{--}}4\,{{\rm TeV}}.
+\end{{equation}}
+The associated Higgs-coupling deviations should be parametrically of order
+\begin{{equation}}
+\frac{{\Delta g}}{{g}}\sim\frac{{v^2}}{{m_{{\rm gap}}^{{2}}}}\sim10^{{-3}}\text{{--}}10^{{-2}} .
+\end{{equation}}
+This is a falsifiable target, not a confirmed prediction. The module weakens if the completed determinant forces much larger deviations, no TeV-sector threshold, or collider-excluded states.
 
 \section{{Validation Gates}}
 The module would fail if any of the following gates fail:
@@ -359,7 +434,7 @@ The module would fail if any of the following gates fail:
 \end{{itemize}}
 
 \section{{Conclusion}}
-The Branch A Higgs module links a $3+2$ stabilizer, hypercharge normalization, a $\operatorname{{sech}}^{{3/10}}$ visible zero mode, and a quartic overlap close to the observed Higgs quartic scale. The paper establishes a compact, reproducible candidate mechanism. It does not establish the full parent theory. The next paper-grade step is to complete the parent-quartic, Projection-BRST, and top-determinant gates and compare the implied heavy-sector window against collider constraints.
+The Branch A Higgs module links a $3+2$ stabilizer, hypercharge normalization, a $\operatorname{{sech}}^{{3/10}}$ visible zero mode, and a quartic overlap requiring an order-one parent quartic. The paper establishes a compact, reproducible candidate mechanism. It does not establish the full parent theory or solve the Higgs hierarchy problem. The next paper-grade step is to derive the $\nu_i=3|Y_i|/5$ rule, complete the Projection-BRST and top-determinant gates, and compare the implied heavy-sector window against collider constraints.
 
 \bibliographystyle{{plain}}
 \bibliography{{references}}
@@ -451,6 +526,21 @@ def main() -> None:
     PACKET.mkdir(parents=True, exist_ok=True)
     make_figures()
     write_csv(PACKET / "paper4_higgs_overlap_scan_v01.csv", diagnostic_rows(), ["nu", "I4", "lambda_tau_required_for_lambda_H_0p129", "guardrail"])
+    write_csv(
+        PACKET / "paper4_quartic_sensitivity_audit_v01.csv",
+        sensitivity_rows(),
+        [
+            "band",
+            "nu_min",
+            "nu_max",
+            "I4_min",
+            "I4_max",
+            "lambda_tau_required_min",
+            "lambda_tau_required_max",
+            "interpretation",
+            "guardrail",
+        ],
+    )
     write_csv(PACKET / "paper4_higgs_module_summary_v01.csv", summary_rows(), ["quantity", "value", "interpretation", "guardrail"])
     (SOURCE / "main.tex").write_text(manuscript_tex(), encoding="utf-8")
     (SOURCE / "references.bib").write_text(references_bib(), encoding="utf-8")

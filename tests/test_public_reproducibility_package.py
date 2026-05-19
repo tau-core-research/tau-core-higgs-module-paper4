@@ -40,6 +40,7 @@ def test_publication_package_files_exist():
         ROOT / "figures/paper4_quartic_overlap_curve.svg",
         ROOT / "arxiv_submission_source.zip",
         PACKET / "paper4_higgs_overlap_scan_v01.csv",
+        PACKET / "paper4_quartic_sensitivity_audit_v01.csv",
         PACKET / "paper4_higgs_module_summary_v01.csv",
         PACKET / "paper4_readiness_table_v01.csv",
     ]
@@ -59,8 +60,19 @@ def test_submission_source_claim_boundaries():
     assert "not a completed Standard Model derivation" in tex
     assert "not a proof of Tau Core" in tex
     assert "not an empirical claim" in tex
+    assert "not solve the Higgs hierarchy problem" in tex
+    assert "Why This Is Not Just Numerology" in tex
+    assert "Near-Term Falsifiable Prediction" in tex
     assert "I_4(3/10)" in tex
     assert "\\includegraphics" in tex
+
+
+def test_numerology_and_nu_rule_gates_are_explicit():
+    sensitivity = read_csv(PACKET / "paper4_quartic_sensitivity_audit_v01.csv")
+    readiness = {row["Item"]: row for row in read_csv(PACKET / "paper4_readiness_table_v01.csv")}
+    assert any(row["band"] == "moderate" for row in sensitivity)
+    assert readiness["nu_rule"]["Status"] == "main_blocker"
+    assert "not evidence by itself" in sensitivity[0]["interpretation"]
 
 
 def test_arxiv_zip_is_source_only():

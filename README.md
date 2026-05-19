@@ -1,13 +1,14 @@
-# Tau Core Higgs-sector module paper 4
+# Branch A cohomological Higgs module paper 4
 
 This repository is the public reproducibility package for:
 
-**A Tau Core Branch A Higgs-sector module: stabilizer-derived quartic overlap and cohomological lightness protection**
+**A Branch A cohomological Higgs module: stabilizer-derived quartic overlap and lightness-protection gates**
 
-The manuscript is a cautious theoretical module paper. It does not claim a
-completed Standard Model derivation, a completed theory of everything, or
-empirical validation of Tau Core. It isolates a Higgs-sector mechanism with
-explicit assumptions, numerical checks, and falsification gates.
+The manuscript is a cautious theoretical module paper motivated by the Tau Core
+projection framework. It does not claim a completed Standard Model derivation,
+a completed theory of everything, or empirical validation of Tau Core. It
+isolates a Higgs-sector mechanism with explicit assumptions, sensitivity
+audits, and falsification gates.
 
 ## Theory Context
 
@@ -65,6 +66,10 @@ regenerated, but the PDF readiness row records the compiler blocker.
 - `figures/*.svg`
 - `arxiv_submission_source.zip`
 - `studies/tau_core_higgs_module_v01/packet_v01_seed/*.csv`
+
+The packet includes a quartic-overlap sensitivity audit and an explicit
+`nu_rule` readiness blocker. The value `I4(3/10)` should therefore be read as
+mathematical motivation, not standalone evidence.
 
 ## Scope
 

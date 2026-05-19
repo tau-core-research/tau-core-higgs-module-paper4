@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: "Tau Core Higgs-sector module paper 4"
+title: "Branch A cohomological Higgs module paper 4"
 message: "If you use this reproducibility package, please cite the archived release."
 type: software
 authors:
@@ -8,4 +8,4 @@ authors:
 repository-code: "https://github.com/tau-core-research/tau-core-higgs-module-paper4"
 date-released: "2026-05-19"
 license: "MIT"
-abstract: "Slim reproducibility package for a cautious Higgs-sector module manuscript linking a Tau Core Branch A stabilizer, a cohomological visible Higgs projection, a quartic overlap calculation, and explicit validation gates."
+abstract: "Slim reproducibility package for a cautious Branch A cohomological Higgs module linking a stabilizer-compatible Higgs projection, a quartic overlap sensitivity audit, and explicit validation gates."
