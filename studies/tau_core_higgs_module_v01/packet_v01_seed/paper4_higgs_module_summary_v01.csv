@@ -1,0 +1,9 @@
+quantity,value,interpretation,guardrail
+Higgs_hypercharge,0.500000000,input Standard Model Higgs doublet hypercharge,higgs_module_candidate_not_standard_model_derivation
+Branch_A_metric_factor,0.600000000,assumption/theorem-candidate kappa_tau^2,higgs_module_candidate_not_standard_model_derivation
+nu_D,0.300000000,kappa_tau^2 * |Y_H| = 3/10,higgs_module_candidate_not_standard_model_derivation
+I4_nu_D,0.133756369,quartic localization overlap for sech^(3/10),higgs_module_candidate_not_standard_model_derivation
+lambda_tau_required,0.964440057,parent quartic needed for lambda_H=0.129,higgs_module_candidate_not_standard_model_derivation
+top_spurion_delta_star_example,9.546355271e-04,"illustrative top/flavor mismatch scale, not fitted evidence",higgs_module_candidate_not_standard_model_derivation
+M_tau_example_TeV,8.527266,illustrative scale from mu_H^2=(9/80) delta_star M_tau^2,higgs_module_candidate_not_standard_model_derivation
+m_gap_example_TeV,2.558180,continuum threshold nu_D * M_tau,higgs_module_candidate_not_standard_model_derivation
