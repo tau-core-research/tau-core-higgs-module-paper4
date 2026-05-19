@@ -31,13 +31,16 @@ to regenerate this manuscript.
 ## Repository Contents
 
 ```text
-paper4_submission_source/                         LaTeX source, bibliography, figures, and compiled PDF
-figures/                                          Regenerated SVG figures used by the manuscript
-studies/tau_core_higgs_module_v01/                Paper 4 regeneration script and seed packet
+studies/tau_core_higgs_module_v01/                Paper 4 regeneration script
 wolfram/                                         Optional Wolfram Language audit scripts
 tests/                                            Public reproducibility checks
-arxiv_submission_source.zip                       arXiv-ready source package
 ```
+
+Generated manuscript outputs are intentionally not tracked. Running the
+regeneration command creates `paper4_submission_source/`, regenerated SVG
+figures in `figures/`, packet CSVs under
+`studies/tau_core_higgs_module_v01/packet_v01_seed/`, and
+`arxiv_submission_source.zip`.
 
 ## Reproduce
 
@@ -79,6 +82,8 @@ and the BRST skeleton. They do not prove the `nu_i=3|Y_i|/5` rule, anomaly
 freedom, regulator safety, or radiative stability.
 
 ## Main Outputs
+
+The following files are generated locally by the reproduction command:
 
 - `paper4_submission_source/main.tex`
 - `paper4_submission_source/main.pdf`

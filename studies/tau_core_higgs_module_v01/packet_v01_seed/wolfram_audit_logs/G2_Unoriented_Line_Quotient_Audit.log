@@ -1,7 +1,0 @@
-Tr[T_Y^2] = 1/2
-Line projector P_TY equals P_-TY = True
-Tr[(f T_Y)^2] = f^2/2
-Trace invariant under f -> -f = True
-Kinetic invariant under f -> -f = True
-Unit line magnitude gives f vacua = {{f -> -1}, {f -> 1}}
-Guardrail: proves quotient consequences if physical datum is the unoriented line/projector.

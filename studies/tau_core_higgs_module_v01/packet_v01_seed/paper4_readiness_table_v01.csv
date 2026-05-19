@@ -1,7 +1,0 @@
-Item,Status,Detail,Guardrail
-manuscript_identity,candidate_module,"Higgs-sector mechanism paper, not a completed Standard Model derivation.",higgs_module_candidate_not_standard_model_derivation
-quartic_overlap,reproducible_but_not_evidence_alone,I4(3/10) generated from gamma-function expression and audited for sensitivity.,higgs_module_candidate_not_standard_model_derivation
-nu_rule,main_blocker,"The rule nu_i=3|Y_i|/5 must be derived from a stabilizer, variational, index, or anomaly argument before the module can be promoted.",higgs_module_candidate_not_standard_model_derivation
-cohomological_protection,theorem_candidate,Projection-BRST and quotient structure stated with proof obligations.,higgs_module_candidate_not_standard_model_derivation
-top_determinant,skeleton,"Top/flavor deformation is a roadmap calculation, not a completed determinant proof.",higgs_module_candidate_not_standard_model_derivation
-pdf_compile,ready,Tectonic build status for paper4_submission_source/main.pdf.,higgs_module_candidate_not_standard_model_derivation

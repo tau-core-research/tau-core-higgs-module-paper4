@@ -132,6 +132,24 @@ def test_no_private_theory_dump():
     assert not any("tau-core-theory" in path for path in tracked)
 
 
+def test_generated_outputs_are_not_tracked():
+    tracked = subprocess.run(
+        ["git", "ls-files"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.splitlines()
+    generated_prefixes = (
+        "paper4_submission_source/",
+        "studies/tau_core_higgs_module_v01/packet_v01_seed/",
+    )
+    generated_exact = {"arxiv_submission_source.zip"}
+    assert not any(path.startswith(generated_prefixes) for path in tracked)
+    assert not any(path in generated_exact for path in tracked)
+    assert not any(path.startswith("figures/") and path.endswith(".svg") for path in tracked)
+
+
 def test_wolfram_audit_logs_record_expected_checks():
     overlap = (PACKET / "wolfram_audit_logs/Higgs_Quartic_Overlap_Verification.log").read_text(encoding="utf-8")
     stabilizer = (PACKET / "wolfram_audit_logs/BranchA_Stabilizer_Hypercharge_Audit.log").read_text(encoding="utf-8")

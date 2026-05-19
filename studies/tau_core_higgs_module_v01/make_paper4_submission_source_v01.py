@@ -20,6 +20,7 @@ SOURCE_FIGURES = SOURCE / "figures"
 PUBLIC_FIGURES = ROOT / "figures"
 PACKET = ROOT / "studies/tau_core_higgs_module_v01/packet_v01_seed"
 ARXIV_ZIP = ROOT / "arxiv_submission_source.zip"
+WOLFRAM_LOGS = PACKET / "wolfram_audit_logs"
 
 GUARDRAIL = "higgs_module_candidate_not_standard_model_derivation"
 NU_D = 3.0 / 10.0
@@ -778,6 +779,32 @@ def compile_pdf() -> str:
     return "ready"
 
 
+def run_wolfram_audits() -> None:
+    WOLFRAM_LOGS.mkdir(parents=True, exist_ok=True)
+    scripts = [
+        "Higgs_Quartic_Overlap_Verification.wl",
+        "BranchA_Stabilizer_Hypercharge_Audit.wl",
+        "G2_Unoriented_Line_Quotient_Audit.wl",
+        "Projection_BRST_Skeleton.wl",
+    ]
+    wolframscript = shutil.which("wolframscript")
+    for script in scripts:
+        log_path = WOLFRAM_LOGS / script.replace(".wl", ".log")
+        script_path = ROOT / "wolfram" / script
+        if wolframscript is None:
+            log_path.write_text("blocked_wolframscript_not_installed\n", encoding="utf-8")
+            continue
+        result = subprocess.run(
+            [wolframscript, "-file", str(script_path)],
+            cwd=ROOT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            check=False,
+        )
+        log_path.write_text(result.stdout, encoding="utf-8")
+
+
 def write_zip_entry(zf: ZipFile, path: Path, arcname: str) -> None:
     info = ZipInfo(arcname)
     info.date_time = (2026, 5, 19, 0, 0, 0)
@@ -819,6 +846,7 @@ def main() -> None:
     write_csv(PACKET / "paper4_higgs_module_summary_v01.csv", summary_rows(), ["quantity", "value", "interpretation", "guardrail"])
     (SOURCE / "main.tex").write_text(manuscript_tex(), encoding="utf-8")
     (SOURCE / "references.bib").write_text(references_bib(), encoding="utf-8")
+    run_wolfram_audits()
     pdf_status = compile_pdf()
     write_csv(PACKET / "paper4_readiness_table_v01.csv", readiness_rows(pdf_status), ["Item", "Status", "Detail", "Guardrail"])
     build_arxiv_zip()
