@@ -148,6 +148,15 @@ It does not reproduce:
 \item a collider-ready heavy-sector spectrum.
 \end{itemize}
 
+\section{Wolfram Language Audit}
+The repository includes optional Wolfram Language audit scripts as an independent symbolic/numeric check of the formal skeleton:
+\begin{itemize}
+\item \texttt{Higgs\_Quartic\_Overlap\_Verification.wl} checks the normalized $\operatorname{sech}^\nu x$ profile, the quartic-overlap formula, $I_4(3/10)$, and the sensitivity range for the required parent quartic;
+\item \texttt{BranchA\_Stabilizer\_Hypercharge\_Audit.wl} checks $\operatorname{Tr}T_\Sigma=0$, $\operatorname{Tr}T_\Sigma^2=1/2$, $\operatorname{Tr}T_Y^2=1/2$, and $T_\Sigma=-T_Y$;
+\item \texttt{Projection\_BRST\_Skeleton.wl} checks only the algebraic skeleton $s^2H=0$ and $Q_Dh_D=0$.
+\end{itemize}
+The generated log files are included in the reproducibility packet. These checks support the formula and algebra audit. They do not derive the localization rule, prove anomaly freedom, prove regulator safety, or establish radiative stability.
+
 \section{Why This Is Not Just Numerology}
 The quartic-overlap coincidence alone is not evidence. The module becomes scientifically interesting only if the gates are passed in the right order: first derive the hypercharge-localization rule, then prove the quotient/anomaly safety, then complete the top determinant, and only then compare the resulting heavy-sector predictions to collider constraints. Without those gates, the value $I_4(3/10)$ should be treated as a compact mathematical motivation rather than as physical validation.
 

@@ -67,6 +67,8 @@ def test_submission_source_claim_boundaries():
     assert "not a proof of Tau Core" in tex
     assert "not an empirical claim" in tex
     assert "not solve the Higgs hierarchy problem" in tex
+    assert "Wolfram Language Audit" in tex
+    assert "They do not derive the localization rule" in tex
     assert "Why This Is Not Just Numerology" in tex
     assert "Near-Term Falsifiable Prediction" in tex
     assert "I_4(3/10)" in tex
