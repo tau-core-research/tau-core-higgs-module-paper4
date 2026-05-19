@@ -4,11 +4,11 @@ This repository is the public reproducibility package for:
 
 **A Branch A cohomological Higgs module: stabilizer-derived quartic overlap and lightness-protection gates**
 
-The manuscript is a cautious theoretical module paper motivated by the Tau Core
-projection framework. It does not claim a completed Standard Model derivation,
-a completed theory of everything, or empirical validation of Tau Core. It
-isolates a Higgs-sector mechanism with explicit assumptions, sensitivity
-audits, and falsification gates.
+The manuscript is a cautious Branch A projection/cohomology Higgs-module paper.
+It does not claim a completed Standard Model derivation, a completed theory of
+everything, or empirical validation of the broader parent framework. It isolates
+a Higgs-sector mechanism with explicit assumptions, sensitivity audits, and
+falsification gates.
 
 ## Author And Research Workflow
 
@@ -69,13 +69,14 @@ Optional Wolfram Language checks can be run when Wolfram Engine is activated:
 ```bash
 wolframscript -file wolfram/Higgs_Quartic_Overlap_Verification.wl
 wolframscript -file wolfram/BranchA_Stabilizer_Hypercharge_Audit.wl
+wolframscript -file wolfram/G2_Unoriented_Line_Quotient_Audit.wl
 wolframscript -file wolfram/Projection_BRST_Skeleton.wl
 ```
 
 These scripts verify the symbolic/numeric overlap integral, the Branch A
-stabilizer/hypercharge normalization, and the BRST skeleton. They do not prove
-the `nu_i=3|Y_i|/5` rule, anomaly freedom, regulator safety, or radiative
-stability.
+stabilizer/hypercharge normalization, the unoriented-line quotient consequence,
+and the BRST skeleton. They do not prove the `nu_i=3|Y_i|/5` rule, anomaly
+freedom, regulator safety, or radiative stability.
 
 ## Main Outputs
 
@@ -96,4 +97,4 @@ mathematical motivation, not standalone evidence.
 
 This repository is a reproducibility package for the Higgs-sector module only.
 It should be read as a candidate mechanism and validation roadmap, not as a
-claim that the full Tau Core parent theory has been proven.
+claim that the full parent projection theory has been proven.

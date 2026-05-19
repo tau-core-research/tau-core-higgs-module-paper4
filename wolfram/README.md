@@ -10,6 +10,7 @@ Run them, when `wolframscript` is available, with:
 ```bash
 wolframscript -file wolfram/Higgs_Quartic_Overlap_Verification.wl
 wolframscript -file wolfram/BranchA_Stabilizer_Hypercharge_Audit.wl
+wolframscript -file wolfram/G2_Unoriented_Line_Quotient_Audit.wl
 wolframscript -file wolfram/Projection_BRST_Skeleton.wl
 ```
 
@@ -20,6 +21,9 @@ Expected scope:
   value, and the sensitivity table.
 - `BranchA_Stabilizer_Hypercharge_Audit.wl` checks the `3+2` generator,
   canonical normalization, and `T_Sigma = -T_Y`.
+- `G2_Unoriented_Line_Quotient_Audit.wl` checks the sign-invariance of the
+  line projector, the even invariants, and the two oriented representatives
+  that follow from the unit-line condition.
 - `Projection_BRST_Skeleton.wl` checks only the algebraic skeleton:
   `s^2 H = 0`, `Q h = 0`, and the factorized operator form. It is not an
   anomaly or regulator proof.

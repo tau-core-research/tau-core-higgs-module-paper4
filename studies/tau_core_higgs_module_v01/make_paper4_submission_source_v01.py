@@ -11,6 +11,7 @@ from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 import matplotlib.pyplot as plt
+from matplotlib.patches import FancyBboxPatch
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -242,6 +243,65 @@ def make_figures() -> None:
     fig.tight_layout()
     save_figure(fig, "paper4_quartic_overlap_curve")
 
+    fig, ax = plt.subplots(figsize=(8.0, 4.6))
+    ax.set_axis_off()
+    steps = [
+        ("3+2\nstabilizer", "#dbeafe"),
+        ("hypercharge\nline", "#e0f2fe"),
+        ("unoriented\nquotient", "#dcfce7"),
+        ("minimal\nBPS wall", "#fef3c7"),
+        ("sech\nzero mode", "#fee2e2"),
+        ("quartic\noverlap", "#f3e8ff"),
+        ("proof\ngates", "#e5e7eb"),
+    ]
+    x_positions = [0.06 + index * 0.145 for index in range(len(steps))]
+    y = 0.54
+    w = 0.112
+    h = 0.23
+    for index, ((label, color), x) in enumerate(zip(steps, x_positions)):
+        patch = FancyBboxPatch(
+            (x, y),
+            w,
+            h,
+            boxstyle="round,pad=0.018,rounding_size=0.015",
+            linewidth=1.0,
+            edgecolor="#374151",
+            facecolor=color,
+            transform=ax.transAxes,
+        )
+        ax.add_patch(patch)
+        ax.text(
+            x + w / 2,
+            y + h / 2,
+            label,
+            ha="center",
+            va="center",
+            fontsize=10,
+            color="#111827",
+            transform=ax.transAxes,
+        )
+        if index < len(steps) - 1:
+            ax.annotate(
+                "",
+                xy=(x_positions[index + 1] - 0.014, y + h / 2),
+                xytext=(x + w + 0.014, y + h / 2),
+                arrowprops=dict(arrowstyle="->", lw=1.2, color="#374151"),
+                xycoords=ax.transAxes,
+                textcoords=ax.transAxes,
+            )
+    ax.text(
+        0.5,
+        0.24,
+        "conditional route: derived pieces feed theorem-candidate gates before physical claims",
+        ha="center",
+        va="center",
+        fontsize=10,
+        color="#374151",
+        transform=ax.transAxes,
+    )
+    fig.tight_layout()
+    save_figure(fig, "paper4_mechanism_flow")
+
 
 def save_figure(fig: plt.Figure, stem: str) -> None:
     pdf = SOURCE_FIGURES / f"{stem}.pdf"
@@ -270,11 +330,11 @@ def manuscript_tex() -> str:
 \maketitle
 
 \begin{{abstract}}
-We describe a constrained Branch A cohomological Higgs module, motivated by a Tau Core projection framework, in which the observed four-dimensional Higgs is treated as the visible projection of a tau-profiled parent field. The central reproducible calculation links a minimal $3+2$ stabilizer, the canonical hypercharge direction, a Higgs localization exponent $\nu_D=3/10$, and a zero-mode quartic overlap $I_4(3/10)={i4_d:.6f}$. This is a concrete mathematical result: under the stated Branch A rule, the observed Higgs quartic corresponds to an order-one parent quartic rather than to an extreme hierarchy. The construction is a candidate mechanism with explicit validation gates. It is not a completed Standard Model derivation, not a proof of Tau Core, and not an empirical claim.
+We describe a constrained Branch A projection/cohomology Higgs module in which the observed four-dimensional Higgs is treated as the visible projection of a tau-profiled parent field. The central reproducible calculation links a minimal $3+2$ stabilizer, the canonical hypercharge direction, a Higgs localization exponent $\nu_D=3/10$, and a zero-mode quartic overlap $I_4(3/10)={i4_d:.6f}$. This is a concrete conditional mathematical result: under the stated Branch A rule, the observed Higgs quartic corresponds to an order-one parent quartic rather than to an extreme hierarchy. The construction is a candidate mechanism with explicit validation gates. It is not a completed Standard Model derivation, not a proof of any parent projection theory, and not an empirical claim.
 \end{{abstract}}
 
 \section{{Scope and Claim Boundary}}
-This manuscript isolates one theoretical module: a possible origin for a Higgs-scale quartic overlap and a possible cohomological lightness-protection route. The paper does not claim that the Standard Model, gravity, or the full Tau Core parent theory has been derived. The result should be read as a reproducible candidate mechanism with explicit proof obligations.
+This manuscript isolates one theoretical module: a possible origin for a Higgs-scale quartic overlap and a possible cohomological lightness-protection route. The paper does not claim that the Standard Model, gravity, or a complete parent projection theory has been derived. The result should be read as a reproducible candidate mechanism with explicit proof obligations.
 
 \section{{Minimal Projection Setup}}
 The tau coordinate is treated as an internal projection coordinate rather than an ordinary fifth spacetime dimension. A parent Higgs profile is written as
@@ -304,15 +364,191 @@ Its stabilizer is $S(U(3)\times U(2))$, giving the Standard-Model-compatible non
 Y=\operatorname{{diag}}\left(-\frac13,-\frac13,-\frac13,\frac12,\frac12\right),
 \end{{equation}}
 the canonically normalized hypercharge generator satisfies $T_\Sigma=-T_Y$.
+Equivalently,
+\begin{{equation}}
+T_Y=\sqrt{{\frac35}}\,Y ,
+\end{{equation}}
+so the Branch A stabilizer fixes the familiar hypercharge-normalization factor
+$\kappa_\tau^2=3/5$ used below. This numerical factor is therefore not fitted
+to the Higgs quartic; it is inherited from the stabilizer-compatible
+normalization of the hypercharge direction.
 
 \section{{Higgs Exponent and Zero Mode}}
-The Branch A localization rule is treated here as an assumption/theorem-candidate:
+The Branch A localization postulate is treated here as an
+assumption/theorem-candidate:
 \begin{{equation}}
-\nu_i=\frac35 |Y_i| .
+\nu_i=\kappa_\tau^2 |Y_i|=\frac35 |Y_i| .
 \end{{equation}}
-This is the main theoretical blocker of the manuscript. The rule must eventually be derived from a stabilizer-compatible metric, a variational extremum, an index-theoretic constraint, anomaly matching, or another independent principle. Until such a derivation exists, the quartic-overlap result should not be read as a derivation of the Higgs quartic.
+This separation is important. The factor $3/5$ follows from the Branch A
+hypercharge normalization above; the main theoretical blocker is the remaining
+localization postulate $\nu_i=\kappa_\tau^2|Y_i|$. That postulate must
+eventually be derived from a stabilizer-compatible metric, a variational
+extremum, an index-theoretic constraint, anomaly matching, or another
+independent principle. Until such a derivation exists, the quartic-overlap
+result should not be read as a derivation of the Higgs quartic.
 
 The limited claim tested here is narrower but meaningful. Among linear hypercharge-localization rules $\nu_i=c|Y_i|$, the value $c=3/5$ is the Branch A working value that keeps the Higgs mode localized and gives an order-one parent quartic requirement. This establishes the quantitative target that the derivation gate must explain; it does not close that gate by itself.
+
+\section{{Theorem Status Summary}}
+\begin{{center}}
+\begin{{tabular}}{{p{{0.46\linewidth}}p{{0.42\linewidth}}}}
+\toprule
+\textbf{{Claim}} & \textbf{{Status in this manuscript}}\\
+\midrule
+$3+2$ stabilizer & derived within the minimal Branch A carrier\\
+$\kappa_\tau^2=3/5$ normalization & derived from canonical hypercharge normalization\\
+unique Abelian direction & derived within the traceless $3+2$ Branch A centralizer\\
+unoriented $T_Y$ line quotient & theorem-candidate, with projector audit\\
+$\tanh x$ wall & candidate minimal/BPS wall route\\
+$\nu_i=\kappa_\tau^2|Y_i|$ & theorem-candidate, not yet parent-derived\\
+quartic overlap $I_4(3/10)$ & computed and independently audited\\
+projection-BRST protection & roadmap gate\\
+top determinant / radiative stability & open gate\\
+\bottomrule
+\end{{tabular}}
+\end{{center}}
+
+\begin{{figure}}[htbp]
+\centering
+\includegraphics[width=0.96\linewidth]{{figures/paper4_mechanism_flow.pdf}}
+\caption{{Mechanism route and proof-gate structure. The first steps are controlled algebraic reductions; the localization rule and physical interpretation remain conditional on the parent-action gates.}}
+\label{{fig:mechanism-flow}}
+\end{{figure}}
+
+\section{{Candidate Route To The Localization Rule}}
+The localization postulate can be sharpened into a candidate derivation route.
+Assume that the tau-direction zero-mode operator for a field component $i$ is a
+covariant first-order operator
+\begin{{equation}}
+Q_i=\partial_x + A_{{\tau,i}}(x),
+\end{{equation}}
+and that the Branch A stabilizer induces a hypercharge-directed tau connection
+\begin{{equation}}
+A_{{\tau,i}}(x)=\kappa_\tau^2 Y_i \tanh x .
+\end{{equation}}
+Then the chiral zero-mode equation
+\begin{{equation}}
+Q_i h_i=0
+\end{{equation}}
+has the local solution
+\begin{{equation}}
+h_i(x)\propto \exp\left[-\int^x\kappa_\tau^2 Y_i\tanh u\,du\right]
+=\operatorname{{sech}}^{{\kappa_\tau^2 Y_i}}x .
+\end{{equation}}
+Normalizability selects the sign/chirality of the localized branch, so the
+positive localization exponent is
+\begin{{equation}}
+\nu_i=\left|\kappa_\tau^2 Y_i\right|=\kappa_\tau^2|Y_i| .
+\end{{equation}}
+
+This is not yet a complete proof, because the hypercharge-directed connection
+$A_{{\tau,i}}(x)=\kappa_\tau^2Y_i\tanh x$ must itself be derived from the parent
+metric, connection, index problem, or BRST quotient. It does, however, isolate
+the missing theorem: once the tau connection is fixed by the canonically
+normalized hypercharge generator, the zero-mode exponent follows algebraically.
+
+\section{{Stabilizer Origin Of The Hypercharge Direction}}
+Branch A starts from the $3+2$ split
+\begin{{equation}}
+V=C\oplus W,\qquad \dim C=3,\quad \dim W=2 .
+\end{{equation}}
+A connection that preserves the non-Abelian stabilizer $SU(3)\times SU(2)$
+must be block-scalar on $C$ and on $W$:
+\begin{{equation}}
+T=\operatorname{{diag}}(a,a,a,b,b).
+\end{{equation}}
+The traceless condition gives
+\begin{{equation}}
+3a+2b=0 .
+\end{{equation}}
+Thus, up to an overall normalization, there is only one Abelian generator that
+commutes with the Branch A non-Abelian stabilizer. Choosing the conventional
+Standard Model hypercharge signs gives
+\begin{{equation}}
+Y=\operatorname{{diag}}\left(-\frac13,-\frac13,-\frac13,\frac12,\frac12\right).
+\end{{equation}}
+After canonical normalization this is the same direction as $-T_\Sigma$.
+Therefore a minimal stabilizer-preserving tau connection has no independent
+Abelian direction available other than hypercharge:
+\begin{{equation}}
+A_\tau(x)=f(x)\,T_Y .
+\end{{equation}}
+This is the sense in which the hypercharge alignment is derived from the Branch
+A stabilizer. A stronger proof would still have to show that the parent
+connection dynamically chooses this minimal stabilizer-preserving Abelian
+direction rather than a larger symmetry-breaking sector.
+
+\section{{Minimal Wall Profile And Quotient Vacua}}
+Once the direction is fixed, the remaining question is the scalar interpolation
+$f(x)$. The minimal domain-wall ansatz assumes a smooth odd profile connecting
+two constant asymptotic tau vacua:
+\begin{{equation}}
+f(-\infty)=-1,\qquad f(+\infty)=1,\qquad f(0)=0 .
+\end{{equation}}
+The standard first-order kink equation
+\begin{{equation}}
+f'(x)=1-f(x)^2
+\end{{equation}}
+has the unique centered solution
+\begin{{equation}}
+f(x)=\tanh x .
+\end{{equation}}
+Equivalently, this is the Bogomolny equation for the quartic domain-wall
+potential
+\begin{{equation}}
+V(f)=\frac12(1-f^2)^2 ,
+\end{{equation}}
+after choosing the tau length scale so that the wall width is one. The same
+choice also yields the Pöschl--Teller supersymmetric zero-mode operator
+\begin{{equation}}
+Q_i=\partial_x+\kappa_\tau^2Y_i\tanh x ,
+\end{{equation}}
+whose normalizable solutions are powers of $\operatorname{{sech}}x$.
+
+Thus the $\tanh x$ profile is not selected to fit the Higgs quartic. It is the
+minimal centered kink profile for a smooth two-vacuum tau wall. What remains
+open is whether the parent projection geometry or quotient action forces this
+minimal kink rather than allowing a more general monotone profile.
+
+The two-vacuum part of this wall route can be given a sharper quotient
+interpretation. The Branch A Abelian direction is a one-dimensional internal line
+\begin{{equation}}
+L_Y=\operatorname{{span}}(T_Y),
+\end{{equation}}
+not necessarily a signed observable vector. If the parent regular background is
+the unoriented line, or equivalently the rank-one projector onto that line, then
+the two oriented representatives are identified:
+\begin{{equation}}
+\operatorname{{span}}(T_Y)=\operatorname{{span}}(-T_Y),\qquad
+P_Y=P_{{-Y}} .
+\end{{equation}}
+Thus the quotient identifies
+\begin{{equation}}
+\Sigma\sim-\Sigma .
+\end{{equation}}
+For $\Sigma=fT_Y$, this gives
+\begin{{equation}}
+f\sim -f .
+\end{{equation}}
+The regular invariants are sign-even:
+\begin{{equation}}
+\operatorname{{Tr}}(\Sigma^2)=\frac12 f^2,\qquad
+\operatorname{{Tr}}(\Sigma'^2)=\frac12(f')^2 .
+\end{{equation}}
+Therefore odd powers of $f$ would not be well defined on the quotient. If the
+regular branch fixes the line magnitude,
+\begin{{equation}}
+2\operatorname{{Tr}}(\Sigma^2)=1,
+\end{{equation}}
+then $f^2=1$, giving the two oriented representatives $f=\pm1$. In this sense,
+the two vacua are not two unrelated signed scalar states; they are the two
+orientations of the same internal Branch A line.
+
+This closes the two-vacuum logic conditional on a parent theorem that the
+Branch A regular datum is an unoriented tau-normal line or projector. If the
+full parent theory instead treats $+T_Y$ and $-T_Y$ as distinct observable
+charges, this quotient argument fails and the two-vacuum wall must be supplied
+by a separate dynamical mechanism.
 
 For the Higgs doublet, $Y_H=1/2$, giving
 \begin{{equation}}
@@ -364,7 +600,7 @@ To reduce the numerology risk, the generator writes an explicit sensitivity tabl
 \end{{figure}}
 
 \section{{Cohomological Protection}}
-The quotient $H\sim H+Q_D^\dagger\Lambda$ suggests a Projection-BRST implementation,
+The quotient $H\sim H+Q_D^\dagger\Lambda$ suggests a projection-BRST implementation,
 \begin{{equation}}
 sH=Q_D^\dagger c,\qquad sc=0,\qquad s\bar c=b,\qquad sb=0 .
 \end{{equation}}
@@ -372,7 +608,7 @@ At the exact cohomological point the critical operator is factorized,
 \begin{{equation}}
 \mathcal{{O}}_0=Q_D^\dagger Q_D,
 \end{{equation}}
-so the visible zero mode is massless. A local parent mass $\int H^\dagger H\,dx$ does not descend to the quotient because it is not invariant under the vertical redundancy. This is only a possible lightness-protection route. The current manuscript does not solve the Higgs hierarchy problem. A complete treatment would require the Hilbert-space domain, nilpotency, regulator, anomaly, and Ward-identity analysis. Here the Projection-BRST language is retained as a roadmap gate, not as a completed proof.
+so the visible zero mode is massless. A local parent mass $\int H^\dagger H\,dx$ does not descend to the quotient because it is not invariant under the vertical redundancy. This is only a possible lightness-protection route. The current manuscript does not solve the Higgs hierarchy problem. A complete treatment would require the Hilbert-space domain, nilpotency, regulator, anomaly, and Ward-identity analysis. Here the projection-BRST language is retained as a roadmap gate, not as a completed QFT closure proof.
 
 \section{{Controlled Top/Flavor Deformation}}
 The leading cohomology-breaking deformation is written as
@@ -387,7 +623,7 @@ and therefore
 \begin{{equation}}
 \mu_H^2=\frac9{{80}}\delta_\star M_\tau^2 .
 \end{{equation}}
-This section is a roadmap calculation: the top determinant must still be completed before the deformation can be promoted to a derived prediction. In particular, the manuscript does not yet prove radiative stability. The top/flavor determinant must show that mismatch-independent and linear mass terms are absent or quotient-trivial.
+This section is a roadmap calculation: the top determinant must still be completed before the deformation can be promoted to a derived prediction. In particular, the manuscript does not yet prove radiative stability or solve the hierarchy problem. The top/flavor determinant is the hardest remaining gate: it must show that mismatch-independent and linear mass terms are absent or quotient-trivial.
 
 \section{{What Is Reproduced And What Is Not}}
 The current package reproduces:
@@ -412,13 +648,43 @@ It does not reproduce:
 The repository includes optional Wolfram Language audit scripts as an independent symbolic/numeric check of the formal skeleton:
 \begin{{itemize}}
 \item \texttt{{Higgs\_Quartic\_Overlap\_Verification.wl}} checks the normalized $\operatorname{{sech}}^\nu x$ profile, the quartic-overlap formula, $I_4(3/10)$, and the sensitivity range for the required parent quartic;
-\item \texttt{{BranchA\_Stabilizer\_Hypercharge\_Audit.wl}} checks $\operatorname{{Tr}}T_\Sigma=0$, $\operatorname{{Tr}}T_\Sigma^2=1/2$, $\operatorname{{Tr}}T_Y^2=1/2$, and $T_\Sigma=-T_Y$;
+\item \texttt{{BranchA\_Stabilizer\_Hypercharge\_Audit.wl}} checks $\operatorname{{Tr}}T_\Sigma=0$, $\operatorname{{Tr}}T_\Sigma^2=1/2$, $\operatorname{{Tr}}T_Y^2=1/2$, and $T_\Sigma=-T_Y$, thereby verifying the stabilizer and hypercharge-normalization origin of the $3/5$ factor;
+\item \texttt{{G2\_Unoriented\_Line\_Quotient\_Audit.wl}} checks that the line projector for $T_Y$ is invariant under $T_Y\mapsto -T_Y$, that $\operatorname{{Tr}}[(fT_Y)^2]=f^2/2$, and that the unit-line condition gives the two oriented representatives $f=\pm1$;
 \item \texttt{{Projection\_BRST\_Skeleton.wl}} checks only the algebraic skeleton $s^2H=0$ and $Q_Dh_D=0$.
 \end{{itemize}}
-The generated log files are included in the reproducibility packet. These checks support the formula and algebra audit. They do not derive the localization rule, prove anomaly freedom, prove regulator safety, or establish radiative stability.
+The generated log files are included in the reproducibility packet. These checks support the formula and algebra audit. They verify the normalization source of $3/5$, but they do not derive the localization postulate $\nu_i=\kappa_\tau^2|Y_i|$, prove anomaly freedom, prove regulator safety, or establish radiative stability.
 
 \section{{Why This Is Not Just Numerology}}
-The quartic-overlap calculation is evidence for internal coherence of the Branch A Higgs module, but not evidence for the full physical theory. The module becomes scientifically decisive only if the gates are passed in the right order: first derive the hypercharge-localization rule, then prove the quotient/anomaly safety, then complete the top determinant, and only then compare the resulting heavy-sector predictions to collider constraints. Without those gates, the value $I_4(3/10)$ should be treated as a reproducible mechanism target rather than as physical validation.
+The quartic-overlap calculation is evidence for internal coherence of the Branch A Higgs module, but not evidence for the full physical theory. The module becomes scientifically decisive only if the gates are passed in the right order: first derive the localization postulate that ties the exponent to $\kappa_\tau^2|Y_i|$, then prove the quotient/anomaly safety, then complete the top determinant, and only then compare the resulting heavy-sector predictions to collider constraints. Without those gates, the value $I_4(3/10)$ should be treated as a reproducible mechanism target rather than as physical validation.
+
+\section{{Remaining Proof Gates}}
+The present manuscript isolates three unresolved gates. These are not
+presentation details; they are the conditions that separate the current
+mechanism target from a Higgs-sector derivation.
+
+\begin{{enumerate}}
+\item \textbf{{Localization derivation.}} The factor $3/5$ is now traced to
+the Branch A hypercharge normalization, but the localization postulate
+$\nu_i=\kappa_\tau^2|Y_i|$ still has to be derived. A successful derivation
+would need to show that the Branch A regular background is the unoriented
+hypercharge line/projector, that non-hypercharge leakage modes are
+Hessian-positive or quotient-null, and that the reduced wall functional is the
+minimal BPS two-vacuum functional in the canonical tau measure.
+\item \textbf{{BRST/anomaly/regulator consistency.}} The projection-BRST
+skeleton explains how a quotient could protect the visible zero mode, but the
+present packet checks only the algebraic skeleton. A proof must still define
+the Hilbert-space domain, nilpotent charge, regulator, anomaly constraints, and
+Ward identities.
+\item \textbf{{Top determinant and radiative stability.}} The top/flavor
+deformation is still a roadmap calculation. Until the determinant is computed
+and mismatch-independent or linear mass terms are shown to be absent or
+quotient-trivial, the manuscript does not solve the Higgs hierarchy problem.
+\end{{enumerate}}
+
+These gates make the status of the paper precise. The quartic-overlap result is
+a reproducible and nontrivial mechanism target, but the localization,
+cohomological consistency, and radiative-stability gates must all close before
+the module can be promoted to a derivation.
 
 \section{{Near-Term Falsifiable Prediction}}
 The current module predicts a narrow kind of future test rather than an already validated signal. If the top/flavor deformation gate is completed with a natural spurion $\delta_\star\sim10^{-3}$, the same equations imply a parent scale $M_\tau$ in the multi-TeV range and a Higgs-sector spectral threshold
@@ -436,14 +702,14 @@ The module would fail if any of the following gates fail:
 \begin{{itemize}}
 \item the Branch A projection metric rule $\nu_i=3|Y_i|/5$ cannot be derived;
 \item the parent quartic is not canonical or requires large tuning;
-\item the Projection-BRST quotient is anomalous or regulator-dependent;
+\item the projection-BRST quotient is anomalous or regulator-dependent;
 \item a visible Higgs mass is unavoidable at $\delta_\star=0$;
 \item the top determinant produces a large mismatch-independent or linear mass term;
 \item the TeV-sector spectral window is excluded by Higgs coupling or direct-search constraints.
 \end{{itemize}}
 
 \section{{Conclusion}}
-The Branch A Higgs module links a $3+2$ stabilizer, hypercharge normalization, a $\operatorname{{sech}}^{{3/10}}$ visible zero mode, and a quartic overlap requiring an order-one parent quartic. The paper establishes a compact, reproducible mechanism target: if the Branch A localization rule is derived, the Higgs quartic is mapped to a natural parent-scale coupling rather than an extreme hierarchy. It does not establish the full parent theory or solve the Higgs hierarchy problem. The next paper-grade step is to derive the $\nu_i=3|Y_i|/5$ rule, complete the Projection-BRST and top-determinant gates, and compare the implied heavy-sector window against collider constraints.
+The Branch A Higgs module links a $3+2$ stabilizer, hypercharge normalization, a $\operatorname{{sech}}^{{3/10}}$ visible zero mode, and a quartic overlap requiring an order-one parent quartic. The paper establishes a compact, reproducible mechanism target: if the Branch A localization rule is derived, the Higgs quartic is mapped to a natural parent-scale coupling rather than an extreme hierarchy. It does not establish the full parent theory or solve the Higgs hierarchy problem. The next paper-grade step is to derive the $\nu_i=3|Y_i|/5$ rule, complete the projection-BRST and top-determinant gates, and compare the implied heavy-sector window against collider constraints.
 
 \bibliographystyle{{plain}}
 \bibliography{{references}}
