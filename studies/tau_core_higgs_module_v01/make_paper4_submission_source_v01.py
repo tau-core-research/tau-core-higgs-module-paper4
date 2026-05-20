@@ -132,6 +132,12 @@ def summary_rows() -> list[dict[str, object]]:
             "interpretation": "two-block stability, parent selection, multiplicity selection, invariant tensor, invariant/anomaly bridge",
             "guardrail": GUARDRAIL,
         },
+        {
+            "quantity": "post_package_branch_a_refinements",
+            "value": "4",
+            "interpretation": "physical Q wall-Hessian gate, same-domain determinant pilot, top/Yukawa slot, SM-emergence roadmap",
+            "guardrail": GUARDRAIL,
+        },
     ]
 
 
@@ -195,8 +201,14 @@ def readiness_rows(pdf_status: str = "not_run") -> list[dict[str, object]]:
         },
         {
             "Item": "top_determinant",
-            "Status": "skeleton",
-            "Detail": "Top/flavor deformation is a roadmap calculation, not a completed determinant proof.",
+            "Status": "sharpened_open_gate",
+            "Detail": "The up-type top-sensitive slot and same-domain wall-Q determinant pilot are recorded, but the physical top determinant, Yukawa strength, and family hierarchy remain open.",
+            "Guardrail": GUARDRAIL,
+        },
+        {
+            "Item": "standard_model_emergence",
+            "Status": "roadmap_only",
+            "Detail": "The broader Branch A Standard Model emergence program is tracked as a separate parent-theory roadmap, not as a result of this paper.",
             "Guardrail": GUARDRAIL,
         },
         {
@@ -343,7 +355,7 @@ def manuscript_tex() -> str:
 \maketitle
 
 \begin{{abstract}}
-We describe a constrained Branch A projection/cohomology Higgs module in which the observed four-dimensional Higgs is treated as the visible projection of a tau-profiled parent field. The central reproducible calculation links a minimal $3+2$ stabilizer, the canonical hypercharge direction, a Higgs localization exponent $\nu_D=3/10$, and a zero-mode quartic overlap $I_4(3/10)={i4_d:.6f}$. This is a concrete conditional mathematical result: under the stated Branch A rule, the observed Higgs quartic corresponds to an order-one parent quartic rather than to an extreme hierarchy. The construction is a candidate mechanism with explicit validation gates. It is not a completed Standard Model derivation, not a proof of any parent projection theory, and not an empirical claim.
+We describe a constrained Branch A projection/cohomology Higgs module in which the observed four-dimensional Higgs is treated as the visible projection of a tau-profiled parent field. The central reproducible calculation links a minimal $3+2$ stabilizer, the canonical hypercharge direction, a Higgs localization exponent $\nu_D=3/10$, and a zero-mode quartic overlap $I_4(3/10)={i4_d:.6f}$. This is a concrete conditional mathematical result: under the stated Branch A rule, the observed Higgs quartic corresponds to an order-one parent quartic rather than to an extreme hierarchy. Newer Branch A parent-hub refinements sharpen the wall-Hessian, top/Yukawa, and Standard-Model-emergence gates, but they are treated here only as gate refinements. The construction remains a candidate mechanism with explicit validation gates. It is not a completed Standard Model derivation, not a proof of any parent projection theory, and not an empirical claim.
 \end{{abstract}}
 
 \section{{Scope and Claim Boundary}}
@@ -423,6 +435,8 @@ $\nu_i=\kappa_\tau^2|Y_i|$ & theorem-candidate, not yet parent-derived\\
 quartic overlap $I_4(3/10)$ & computed and independently audited\\
 projection-BRST protection & roadmap gate\\
 top determinant / radiative stability & open gate\\
+top/Yukawa slot and same-domain determinant pilot & sharpened open gate; not a physical determinant proof\\
+Standard Model emergence program & separate roadmap, not a result of this paper\\
 \bottomrule
 \end{{tabular}}
 \end{{center}}
@@ -466,6 +480,43 @@ is anomaly-safe, while removing the $3\times2$ bifundamental bridge or adding
 an extra unpaired light doublet fails the anomaly/chirality gate.  This shows
 which structures must be derived together.  It does not derive the Standard
 Model representation content.
+
+\section{{Post-Package Branch A Gate Refinements}}
+The companion parent-theory hub now tracks several refinements that sharpen the
+open gates of this manuscript without closing them.  They are included here to
+make the current status explicit, not to expand the scope of the paper into a
+complete Standard Model derivation.
+
+First, the physical first-order wall operator should not be introduced as an
+independent choice.  The sharper gate is that the operator
+\begin{{equation}}
+Q_\mu=\partial_x+\mu\tanh x
+\end{{equation}}
+must arise from the same wall-Hessian/domain package that selects the
+background wall and the visible zero mode.  If $Q_\mu$ has to be chosen by hand
+after the wall is declared, the localization route remains underived.
+
+Second, a finite same-domain wall-$Q$ determinant pilot records the expected
+positive-mode pairing structure, but it is not a physical top determinant.  The
+pilot is useful because it checks whether the determinant gate can be posed in
+the same operator domain as the Higgs zero mode.  It does not compute the
+renormalized Standard Model top loop and does not establish radiative
+stability.
+
+Third, the top-sensitive slot is now identified more sharply as the up-type
+closure channel schematically associated with
+\begin{{equation}}
+q_L-H-u_R^c .
+\end{{equation}}
+This identifies where a top/Yukawa deformation would enter the Branch A
+structure.  It does not derive the top mass, the top Yukawa strength, the
+family hierarchy, or the physical determinant.
+
+Finally, the broader Branch A Standard Model emergence program is treated as a
+separate roadmap.  This manuscript may supply one Higgs-module gate inside that
+larger program, but it does not claim to derive the full representation
+content, gauge dynamics, Yukawa sector, anomaly cancellation, or low-energy
+effective field theory.
 
 \section{{Candidate Route To The Localization Rule}}
 The localization postulate can be sharpened into a candidate derivation route.
@@ -675,7 +726,7 @@ and therefore
 \begin{{equation}}
 \mu_H^2=\frac9{{80}}\delta_\star M_\tau^2 .
 \end{{equation}}
-This section is a roadmap calculation: the top determinant must still be completed before the deformation can be promoted to a derived prediction. In particular, the manuscript does not yet prove radiative stability or solve the hierarchy problem. The top/flavor determinant is the hardest remaining gate: it must show that mismatch-independent and linear mass terms are absent or quotient-trivial.
+This section is a roadmap calculation: the top determinant must still be completed before the deformation can be promoted to a derived prediction. The current parent-hub refinement identifies the relevant top-sensitive slot as an up-type closure channel and records a same-domain wall-$Q$ determinant pilot. These are gate refinements, not a completed determinant. In particular, the manuscript does not yet prove radiative stability or solve the hierarchy problem. The top/flavor determinant remains the hardest gate: it must show that mismatch-independent and linear mass terms are absent or quotient-trivial, and it must derive the physical Yukawa strength rather than inserting it.
 
 \section{{What Is Reproduced And What Is Not}}
 The current package reproduces:
@@ -685,7 +736,8 @@ The current package reproduces:
 \item the Branch A working exponent $\nu_D=3/10$ once the $\nu_i=3|Y_i|/5$ rule is assumed;
 \item the normalized $\operatorname{{sech}}^{{3/10}}$ zero mode;
 \item the quartic overlap $I_4(3/10)={i4_d:.6f}$;
-\item an order-one parent-quartic requirement and a TeV-scale deformation estimate.
+\item an order-one parent-quartic requirement and a TeV-scale deformation estimate;
+\item a sharpened statement of where the wall-$Q$ and top/Yukawa gates must enter.
 \end{{itemize}}
 It does not reproduce:
 \begin{{itemize}}
@@ -695,6 +747,7 @@ It does not reproduce:
 \item derivation of the $3\times2$ bridge and singlet/color channels from the parent action;
 \item radiative stability;
 \item the measured Higgs mass from a completed top determinant;
+\item the top Yukawa strength or family hierarchy;
 \item a collider-ready heavy-sector spectrum.
 \end{{itemize}}
 
@@ -736,9 +789,16 @@ present packet checks only the algebraic skeleton. A proof must still define
 the Hilbert-space domain, nilpotent charge, regulator, anomaly constraints, and
 Ward identities.
 \item \textbf{{Top determinant and radiative stability.}} The top/flavor
-deformation is still a roadmap calculation. Until the determinant is computed
-and mismatch-independent or linear mass terms are shown to be absent or
-quotient-trivial, the manuscript does not solve the Higgs hierarchy problem.
+deformation is still a roadmap calculation. The up-type top-sensitive slot and
+same-domain wall-$Q$ pilot sharpen where the calculation must occur, but they
+do not replace it. Until the physical determinant is computed, the Yukawa
+strength is derived, and mismatch-independent or linear mass terms are shown to
+be absent or quotient-trivial, the manuscript does not solve the Higgs
+hierarchy problem.
+\item \textbf{{Standard Model emergence.}} A broader Branch A emergence program
+must still derive the representation content, gauge dynamics, anomaly
+cancellation, Yukawa pattern, and low-energy effective field theory from the
+parent action. This paper contributes only a Higgs-module candidate gate.
 \end{{enumerate}}
 
 These gates make the status of the paper precise. The quartic-overlap result is
@@ -763,15 +823,16 @@ The module would fail if any of the following gates fail:
 \item the Branch A projection metric rule $\nu_i=3|Y_i|/5$ cannot be derived;
 \item the two-block / $3+2$ / invariant-role chain cannot be derived from the parent action or stability structure;
 \item the $3\times2$ bridge and anomaly-safe visible target cannot be obtained without post-hoc representation choice;
+\item the physical $Q_\mu$ operator cannot be derived from the same wall-Hessian/domain package;
 \item the parent quartic is not canonical or requires large tuning;
 \item the projection-BRST quotient is anomalous or regulator-dependent;
 \item a visible Higgs mass is unavoidable at $\delta_\star=0$;
-\item the top determinant produces a large mismatch-independent or linear mass term;
+\item the top determinant produces a large mismatch-independent or linear mass term, or requires an inserted Yukawa hierarchy;
 \item the TeV-sector spectral window is excluded by Higgs coupling or direct-search constraints.
 \end{{itemize}}
 
 \section{{Conclusion}}
-The Branch A Higgs module links a $3+2$ stabilizer, hypercharge normalization, a $\operatorname{{sech}}^{{3/10}}$ visible zero mode, and a quartic overlap requiring an order-one parent quartic. The paper establishes a compact, reproducible mechanism target: if the Branch A localization rule is derived, the Higgs quartic is mapped to a natural parent-scale coupling rather than an extreme hierarchy. The newest parent-selection refinements make the $3+2$ input less arbitrary by linking it to two protected visible clusters, $\epsilon_3/\epsilon_2$ invariant roles, and an invariant/anomaly bridge. The manuscript still does not establish the full parent theory or solve the Higgs hierarchy problem. The next paper-grade step is to derive the two-block representation structure and the $\nu_i=3|Y_i|/5$ rule from the parent action, complete the projection-BRST and top-determinant gates, and compare the implied heavy-sector window against collider constraints.
+The Branch A Higgs module links a $3+2$ stabilizer, hypercharge normalization, a $\operatorname{{sech}}^{{3/10}}$ visible zero mode, and a quartic overlap requiring an order-one parent quartic. The paper establishes a compact, reproducible mechanism target: if the Branch A localization rule is derived, the Higgs quartic is mapped to a natural parent-scale coupling rather than an extreme hierarchy. The newest parent-selection refinements make the $3+2$ input less arbitrary by linking it to two protected visible clusters, $\epsilon_3/\epsilon_2$ invariant roles, and an invariant/anomaly bridge. The newer wall-$Q$, top/Yukawa, and Standard-Model-emergence refinements sharpen the open gates, but they do not close them. The manuscript still does not establish the full parent theory or solve the Higgs hierarchy problem. The next paper-grade step is to derive the two-block representation structure and the $\nu_i=3|Y_i|/5$ rule from the parent action, complete the projection-BRST and physical top-determinant gates, and compare the implied heavy-sector window against collider constraints.
 
 \bibliographystyle{{plain}}
 \bibliography{{references}}

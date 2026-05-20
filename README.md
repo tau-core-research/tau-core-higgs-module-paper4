@@ -18,6 +18,14 @@ protected visible clusters, `epsilon_3`/`epsilon_2` invariant roles, and an
 invariant/anomaly bridge. These are reproducible mechanism gates, not a
 derivation of the Standard Model representation content.
 
+The refreshed package also records the latest Branch A gate refinements from
+the companion theory hub: the physical `Q` operator should come from the same
+wall-Hessian/domain package as the Higgs wall, the same-domain wall-`Q`
+determinant pilot is only a positive-mode pairing check, and the top-sensitive
+slot is identified as an up-type closure channel. These sharpen the open gates;
+they do not derive the top Yukawa strength, family hierarchy, or full Standard
+Model.
+
 ## Author And Research Workflow
 
 I am an independent researcher using an AI-assisted workflow to develop reproducible diagnostic tests around projection-sensitive residual hypotheses. I am not claiming expert-level validation. I would value criticism on whether the proposed gate/falsification structure is scientifically meaningful.
@@ -102,10 +110,10 @@ The following files are generated locally by the reproduction command:
 - `studies/tau_core_higgs_module_v01/packet_v01_seed/*.csv`
 - `studies/tau_core_higgs_module_v01/packet_v01_seed/wolfram_audit_logs/*.log`
 
-The packet includes a quartic-overlap sensitivity audit and an explicit
-`nu_rule` readiness blocker, plus a parent-selection readiness row. The value
-`I4(3/10)` should therefore be read as mathematical motivation, not standalone
-evidence.
+The packet includes a quartic-overlap sensitivity audit and explicit readiness
+blockers for the `nu_rule`, parent-selection route, top determinant, and
+broader Standard Model emergence roadmap. The value `I4(3/10)` should therefore
+be read as mathematical motivation, not standalone evidence.
 
 ## Scope
 
