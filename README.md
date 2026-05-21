@@ -55,7 +55,8 @@ tests/                                            Public reproducibility checks
 Generated manuscript outputs are intentionally not tracked. Running the
 regeneration command creates `paper4_submission_source/`, regenerated SVG
 figures in `figures/`, packet CSVs under
-`studies/tau_core_higgs_module_v01/packet_v01_seed/`, and
+`studies/tau_core_higgs_module_v01/packet_v01_seed/`,
+`paper4_full_derivation/`, and
 `arxiv_submission_source.zip`.
 
 ## Reproduce
@@ -105,6 +106,8 @@ The following files are generated locally by the reproduction command:
 - `paper4_submission_source/main.pdf`
 - `paper4_submission_source/references.bib`
 - `paper4_submission_source/figures/*.pdf`
+- `paper4_full_derivation/full_derivation.tex`
+- `paper4_full_derivation/full_derivation.pdf`
 - `figures/*.svg`
 - `arxiv_submission_source.zip`
 - `studies/tau_core_higgs_module_v01/packet_v01_seed/*.csv`

@@ -9,6 +9,7 @@ build/
 paper4_submission_source/*.aux
 paper4_submission_source/*.out
 paper4_submission_source/
+paper4_full_derivation/
 figures/*.svg
 arxiv_submission_source.zip
 studies/tau_core_higgs_module_v01/packet_v01_seed/*.csv
