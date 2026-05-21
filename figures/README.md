@@ -5,6 +5,7 @@ The canonical submission figures are regenerated as PDF files under:
 
 ```text
 paper4_submission_source/figures/
+paper4_full_derivation/figures/
 ```
 
 Regenerate all figures with:
