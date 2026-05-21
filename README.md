@@ -38,11 +38,8 @@ AI systems are used for drafting, mathematical organization, code generation, li
 
 ## Theory Context
 
-The broader Tau Core / projection-theory background is maintained separately at:
-
-```text
-https://github.com/tau-core-research/tau-core-theory
-```
+The broader Tau Core / projection-theory background is maintained separately in
+the [Tau Core theory hub](https://github.com/tau-core-research/tau-core-theory).
 
 This Paper 4 repository is a standalone reproducibility package. The theory-hub
 material used here is reduced to the minimum needed to regenerate this
