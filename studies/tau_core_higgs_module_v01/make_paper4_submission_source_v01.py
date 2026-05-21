@@ -7,6 +7,7 @@ import csv
 import math
 import shutil
 import subprocess
+import time
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
@@ -131,6 +132,293 @@ def compact_spectrum_pilot_rows(nu: float = NU_D, length: float = 8.0, grid_poin
             }
         )
     return rows
+
+
+def q_paired_spectrum_demo_rows(nu: float = NU_D, length: float = 8.0, grid_points: int = 80) -> list[dict[str, object]]:
+    """Finite-dimensional Q-first spectrum demo.
+
+    This deliberately builds Q first and defines H_minus=Q^T Q and H_plus=Q Q^T.
+    The equality of nonzero spectra is then a linear-algebra theorem.  It is a
+    toy same-domain check, not the physical orbifold classification.
+    """
+    xs = np.linspace(-length, length, grid_points)
+    dx = xs[1] - xs[0]
+    derivative = np.zeros((grid_points - 1, grid_points))
+    for index in range(grid_points - 1):
+        derivative[index, index] = -1.0 / dx
+        derivative[index, index + 1] = 1.0 / dx
+    midpoint = 0.5 * (xs[:-1] + xs[1:])
+    wall = nu * np.tanh(midpoint)
+    average = np.zeros((grid_points - 1, grid_points))
+    for index in range(grid_points - 1):
+        average[index, index] = 0.5
+        average[index, index + 1] = 0.5
+    q_matrix = derivative + wall[:, None] * average
+    h_minus = np.einsum("ki,kj->ij", q_matrix, q_matrix)
+    h_plus = np.einsum("ik,jk->ij", q_matrix, q_matrix)
+    minus_values = np.linalg.eigvalsh(h_minus)
+    plus_values = np.linalg.eigvalsh(h_plus)
+    positive_minus = minus_values[minus_values > 1e-9]
+    positive_plus = plus_values[plus_values > 1e-9]
+    pair_count = min(len(positive_minus), len(positive_plus), 8)
+    zero_count_minus = int(np.sum(minus_values <= 1e-9))
+    zero_count_plus = int(np.sum(plus_values <= 1e-9))
+    rows: list[dict[str, object]] = []
+    rows.append(
+        {
+            "quantity": "q_shape",
+            "mode": "summary",
+            "value": f"{q_matrix.shape[0]}x{q_matrix.shape[1]}",
+            "nu": f"{nu:.9f}",
+            "box_half_length": f"{length:.6f}",
+            "grid_points": grid_points,
+            "interpretation": "Q-first rectangular same-domain toy operator; positive spectra of Q^T Q and Q Q^T must match",
+            "guardrail": GUARDRAIL,
+        }
+    )
+    rows.append(
+        {
+            "quantity": "index_residue",
+            "mode": "summary",
+            "value": str(zero_count_minus - zero_count_plus),
+            "nu": f"{nu:.9f}",
+            "box_half_length": f"{length:.6f}",
+            "grid_points": grid_points,
+            "interpretation": "finite-dimensional kernel-dimension difference in the Q-first toy domain",
+            "guardrail": GUARDRAIL,
+        }
+    )
+    max_residual = 0.0
+    for mode in range(pair_count):
+        residual = abs(positive_minus[mode] - positive_plus[mode])
+        max_residual = max(max_residual, residual)
+        rows.append(
+            {
+                "quantity": "paired_positive_eigenvalue",
+                "mode": mode,
+                "value": f"{positive_minus[mode]:.12e}",
+                "nu": f"{nu:.9f}",
+                "box_half_length": f"{length:.6f}",
+                "grid_points": grid_points,
+                "interpretation": f"H_minus/H_plus residual={residual:.3e}; Q-first toy pairing, not physical orbifold theorem",
+                "guardrail": GUARDRAIL,
+            }
+        )
+    rows.append(
+        {
+            "quantity": "max_pairing_residual",
+            "mode": "summary",
+            "value": f"{max_residual:.12e}",
+            "nu": f"{nu:.9f}",
+            "box_half_length": f"{length:.6f}",
+            "grid_points": grid_points,
+            "interpretation": "maximum absolute residual among first paired positive modes in Q-first toy domain",
+            "guardrail": GUARDRAIL,
+        }
+    )
+    return rows
+
+
+def top_mass_derivative_toy_trace_rows() -> list[dict[str, object]]:
+    """Toy mass-derivative trace audit for the top determinant gate.
+
+    The paired case uses identical positive spectra in the two determinant
+    sectors, so the forbidden mass curvature cancels.  The unpaired case adds a
+    deliberately mismatched contribution to show the failure mode.  This is not
+    the physical top determinant.
+    """
+    lambdas = np.array([0.35, 0.82, 1.47, 2.31, 3.76, 5.18], dtype=float)
+    y_weights = np.array([0.18, 0.11, 0.075, 0.052, 0.034, 0.021], dtype=float)
+    m2_weights = np.array([0.011, 0.008, 0.006, 0.004, 0.003, 0.002], dtype=float)
+    rows: list[dict[str, object]] = []
+    paired_curvature = 0.0
+    for mode, (lam, y_weight, m2_weight) in enumerate(zip(lambdas, y_weights, m2_weights)):
+        contribution = (m2_weight / lam) - (y_weight**2 / lam**2)
+        paired_difference = contribution - contribution
+        paired_curvature += paired_difference
+        rows.append(
+            {
+                "case": "paired_same_domain",
+                "mode": mode,
+                "lambda_minus": f"{lam:.9f}",
+                "lambda_plus": f"{lam:.9f}",
+                "mass_curvature_difference": f"{paired_difference:.12e}",
+                "status": "passes_toy_no_mass_rescue",
+                "interpretation": "paired same-domain toy trace cancels forbidden top mass curvature mode-by-mode",
+                "guardrail": GUARDRAIL,
+            }
+        )
+    rows.append(
+        {
+            "case": "paired_same_domain_summary",
+            "mode": "summary",
+            "lambda_minus": "",
+            "lambda_plus": "",
+            "mass_curvature_difference": f"{paired_curvature:.12e}",
+            "status": "passes_toy_no_mass_rescue",
+            "interpretation": "total paired toy forbidden curvature is zero by construction; physical determinant still open",
+            "guardrail": GUARDRAIL,
+        }
+    )
+    unpaired_lambdas = lambdas.copy()
+    unpaired_lambdas[-1] *= 1.12
+    unpaired_curvature = 0.0
+    for mode, (lam_minus, lam_plus, y_weight, m2_weight) in enumerate(zip(lambdas, unpaired_lambdas, y_weights, m2_weights)):
+        minus_contribution = (m2_weight / lam_minus) - (y_weight**2 / lam_minus**2)
+        plus_contribution = (m2_weight / lam_plus) - (y_weight**2 / lam_plus**2)
+        difference = minus_contribution - plus_contribution
+        unpaired_curvature += difference
+        rows.append(
+            {
+                "case": "unpaired_regulator_failure",
+                "mode": mode,
+                "lambda_minus": f"{lam_minus:.9f}",
+                "lambda_plus": f"{lam_plus:.9f}",
+                "mass_curvature_difference": f"{difference:.12e}",
+                "status": "fails_toy_no_mass_rescue" if abs(difference) > 1e-12 else "locally_paired",
+                "interpretation": "deliberately unpaired toy spectrum exposes forbidden regulator/domain-sensitive mass curvature",
+                "guardrail": GUARDRAIL,
+            }
+        )
+    rows.append(
+        {
+            "case": "unpaired_regulator_failure_summary",
+            "mode": "summary",
+            "lambda_minus": "",
+            "lambda_plus": "",
+            "mass_curvature_difference": f"{unpaired_curvature:.12e}",
+            "status": "fails_toy_no_mass_rescue",
+            "interpretation": "nonzero toy curvature is the failure signature that the real top determinant must avoid",
+            "guardrail": GUARDRAIL,
+        }
+    )
+    for shift_fraction in [0.001, 0.003, 0.01, 0.03, 0.10]:
+        shifted_lambdas = lambdas.copy()
+        shifted_lambdas[-1] *= 1.0 + shift_fraction
+        curvature = 0.0
+        for lam_minus, lam_plus, y_weight, m2_weight in zip(lambdas, shifted_lambdas, y_weights, m2_weights):
+            minus_contribution = (m2_weight / lam_minus) - (y_weight**2 / lam_minus**2)
+            plus_contribution = (m2_weight / lam_plus) - (y_weight**2 / lam_plus**2)
+            curvature += minus_contribution - plus_contribution
+        rows.append(
+            {
+                "case": "mismatch_sensitivity_scan",
+                "mode": f"shift_{shift_fraction:.3f}",
+                "lambda_minus": f"{lambdas[-1]:.9f}",
+                "lambda_plus": f"{shifted_lambdas[-1]:.9f}",
+                "mass_curvature_difference": f"{curvature:.12e}",
+                "status": "detects_mismatch" if abs(curvature) > 1e-8 else "near_zero_toy_limit",
+                "interpretation": "toy sensitivity scan: forbidden curvature should scale away only as the spectral mismatch goes to zero",
+                "guardrail": GUARDRAIL,
+            }
+        )
+    cutoffs = [1.0, 1.5, 2.0, 3.0]
+    shifted_lambdas = lambdas.copy()
+    shifted_lambdas[-1] *= 1.03
+    for cutoff in cutoffs:
+        chi_exp_minus = np.exp(-lambdas / cutoff**2)
+        chi_exp_plus_paired = np.exp(-lambdas / cutoff**2)
+        chi_exp_plus_shifted = np.exp(-shifted_lambdas / cutoff**2)
+        chi_rational_minus = 1.0 / (1.0 + lambdas / cutoff**2) ** 2
+        chi_rational_plus_paired = 1.0 / (1.0 + lambdas / cutoff**2) ** 2
+        chi_rational_plus_shifted = 1.0 / (1.0 + shifted_lambdas / cutoff**2) ** 2
+        base_contribution = (m2_weights / lambdas) - (y_weights**2 / lambdas**2)
+        shifted_contribution = (m2_weights / shifted_lambdas) - (y_weights**2 / shifted_lambdas**2)
+        paired_exp = float(np.sum(chi_exp_minus * base_contribution - chi_exp_plus_paired * base_contribution))
+        paired_rational = float(np.sum(chi_rational_minus * base_contribution - chi_rational_plus_paired * base_contribution))
+        shifted_exp = float(np.sum(chi_exp_minus * base_contribution - chi_exp_plus_shifted * shifted_contribution))
+        shifted_rational = float(np.sum(chi_rational_minus * base_contribution - chi_rational_plus_shifted * shifted_contribution))
+        rows.extend(
+            [
+                {
+                    "case": "cutoff_regulator_scan_paired",
+                    "mode": f"exp_cutoff_{cutoff:.1f}",
+                    "lambda_minus": "paired",
+                    "lambda_plus": "paired",
+                    "mass_curvature_difference": f"{paired_exp:.12e}",
+                    "status": "regulator_independent_zero",
+                    "interpretation": "paired toy spectrum remains zero under exponential cutoff regulator",
+                    "guardrail": GUARDRAIL,
+                },
+                {
+                    "case": "cutoff_regulator_scan_paired",
+                    "mode": f"rational_cutoff_{cutoff:.1f}",
+                    "lambda_minus": "paired",
+                    "lambda_plus": "paired",
+                    "mass_curvature_difference": f"{paired_rational:.12e}",
+                    "status": "regulator_independent_zero",
+                    "interpretation": "paired toy spectrum remains zero under rational cutoff regulator",
+                    "guardrail": GUARDRAIL,
+                },
+                {
+                    "case": "cutoff_regulator_scan_shifted",
+                    "mode": f"exp_cutoff_{cutoff:.1f}",
+                    "lambda_minus": f"{lambdas[-1]:.9f}",
+                    "lambda_plus": f"{shifted_lambdas[-1]:.9f}",
+                    "mass_curvature_difference": f"{shifted_exp:.12e}",
+                    "status": "regulator_sensitive_failure",
+                    "interpretation": "shifted toy spectrum leaves cutoff-dependent forbidden curvature under exponential regulator",
+                    "guardrail": GUARDRAIL,
+                },
+                {
+                    "case": "cutoff_regulator_scan_shifted",
+                    "mode": f"rational_cutoff_{cutoff:.1f}",
+                    "lambda_minus": f"{lambdas[-1]:.9f}",
+                    "lambda_plus": f"{shifted_lambdas[-1]:.9f}",
+                    "mass_curvature_difference": f"{shifted_rational:.12e}",
+                    "status": "regulator_sensitive_failure",
+                    "interpretation": "shifted toy spectrum leaves cutoff-dependent forbidden curvature under rational regulator",
+                    "guardrail": GUARDRAIL,
+                },
+            ]
+        )
+    return rows
+
+
+def anomaly_bridge_audit_rows() -> list[dict[str, object]]:
+    """Frozen qualitative obstruction table for the C14 anomaly/bridge gate."""
+    return [
+        {
+            "case": "c3_single_bridge_target",
+            "bridge_multiplicity": "6",
+            "trace_gate": "declared_target_zero",
+            "cohomology_gate": "connected_closure_pairing_roles",
+            "spectator_gate": "no_endpoint_tuned_spectators",
+            "status": "candidate_survivor",
+            "interpretation": "one protected 3x2 bridge is the normalization target; anomaly cancellation still requires parent-derived representation complex",
+            "guardrail": GUARDRAIL,
+        },
+        {
+            "case": "bridge_removed",
+            "bridge_multiplicity": "0",
+            "trace_gate": "not_applicable",
+            "cohomology_gate": "closure_pairing_roles_disconnected",
+            "spectator_gate": "no_rescue_allowed",
+            "status": "fail_cohomology_bridge",
+            "interpretation": "removing the bridge disconnects the protected roles and cannot support the Yukawa product gate",
+            "guardrail": GUARDRAIL,
+        },
+        {
+            "case": "extra_unpaired_light_doublet",
+            "bridge_multiplicity": "6_plus_extra",
+            "trace_gate": "nonzero_obstruction_unless_parent_partner",
+            "cohomology_gate": "extra_protected_visible_freedom",
+            "spectator_gate": "fails_without_parent_derived_partner",
+            "status": "fail_or_requires_new_parent_partner",
+            "interpretation": "an extra light doublet is not allowed as an endpoint-tuned spectator; it must be forced by the parent complex or the route fails",
+            "guardrail": GUARDRAIL,
+        },
+        {
+            "case": "different_bridge_multiplicity",
+            "bridge_multiplicity": "not_6",
+            "trace_gate": "changes_bridge_trace",
+            "cohomology_gate": "different_visible_complex",
+            "spectator_gate": "requires_new_gate_stack",
+            "status": "falsifies_18_over_5_bridge_normalization",
+            "interpretation": "if the parent complex selects a different protected bridge multiplicity, g_t=18/5 no longer follows",
+            "guardrail": GUARDRAIL,
+        },
+    ]
 
 
 def summary_rows() -> list[dict[str, object]]:
@@ -311,6 +599,12 @@ def summary_rows() -> list[dict[str, object]]:
             "quantity": "c9_compact_spectrum_pilot",
             "value": "finite_box_dirichlet_eigenvalue_audit",
             "interpretation": "first reproducible compact-spectrum numerical pilot for H_minus/H_plus; Q-paired orbifold theorem spectrum remains open",
+            "guardrail": GUARDRAIL,
+        },
+        {
+            "quantity": "q_paired_spectrum_demo",
+            "value": "same_domain_q_first_toy_pairing",
+            "interpretation": "finite-dimensional Q-first toy check: nonzero spectra of Q^T Q and Q Q^T pair exactly up to numerical precision, leaving index residue",
             "guardrail": GUARDRAIL,
         },
         {
@@ -718,11 +1012,43 @@ def make_figures() -> None:
     fig.tight_layout()
     save_figure(fig, "paper4_mechanism_flow")
 
+    toy_rows = top_mass_derivative_toy_trace_rows()
+    scan_rows = [row for row in toy_rows if row["case"] == "mismatch_sensitivity_scan"]
+    cutoff_shifted = [row for row in toy_rows if row["case"] == "cutoff_regulator_scan_shifted"]
+    shifts = [float(row["mode"].replace("shift_", "")) for row in scan_rows]
+    scan_curvatures = [abs(float(row["mass_curvature_difference"])) for row in scan_rows]
+    cutoff_modes = [row["mode"] for row in cutoff_shifted]
+    cutoff_curvatures = [abs(float(row["mass_curvature_difference"])) for row in cutoff_shifted]
+    fig, axes = plt.subplots(1, 2, figsize=(8.0, 3.7))
+    axes[0].plot(shifts, scan_curvatures, marker="o", color="#b91c1c", lw=1.7)
+    axes[0].set_xscale("log")
+    axes[0].set_yscale("log")
+    axes[0].set_xlabel("single-mode spectral shift")
+    axes[0].set_ylabel(r"$|\Delta\mu_t^2|$ toy curvature")
+    axes[0].set_title("Mismatch sensitivity")
+    axes[0].grid(alpha=0.25, which="both")
+    colors = ["#2563eb" if mode.startswith("exp") else "#047857" for mode in cutoff_modes]
+    xloc = np.arange(len(cutoff_modes))
+    axes[1].bar(xloc, cutoff_curvatures, color=colors, alpha=0.85)
+    axes[1].axhline(0.0, color="#111827", lw=0.8)
+    axes[1].set_yscale("log")
+    axes[1].set_ylabel(r"$|\Delta\mu_t^2|$ shifted toy")
+    axes[1].set_title("Regulator sensitivity")
+    axes[1].set_xticks(xloc)
+    axes[1].set_xticklabels([mode.replace("_cutoff_", "\n") for mode in cutoff_modes], rotation=0, fontsize=7)
+    axes[1].grid(alpha=0.25, axis="y", which="both")
+    fig.suptitle("Top mass-derivative toy stress test", fontsize=12)
+    fig.tight_layout()
+    save_figure(fig, "paper4_top_mass_derivative_toy_stress")
+
 
 def save_figure(fig: plt.Figure, stem: str) -> None:
     pdf = SOURCE_FIGURES / f"{stem}.pdf"
     svg = PUBLIC_FIGURES / f"{stem}.svg"
+    full_pdf = FULL_DERIVATION / "figures" / f"{stem}.pdf"
+    full_pdf.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(pdf, metadata={"CreationDate": None, "ModDate": None})
+    fig.savefig(full_pdf, metadata={"CreationDate": None, "ModDate": None})
     fig.savefig(svg, metadata={"Date": None})
     plt.close(fig)
 
@@ -747,7 +1073,16 @@ def manuscript_tex() -> str:
 \maketitle
 
 \begin{{abstract}}
-We describe a constrained Branch A projection/cohomology Higgs module in which the observed four-dimensional Higgs is treated as the visible projection of a tau-profiled parent field. The central reproducible calculation links a minimal $3+2$ stabilizer, the canonical hypercharge direction, a Higgs localization exponent $\nu_D=3/10$, and a zero-mode quartic overlap $I_4(3/10)={i4_d:.6f}$. This is a concrete conditional mathematical result: under the stated Branch A rule, the observed Higgs quartic corresponds to an order-one parent quartic rather than to an extreme hierarchy. The newest parent-hub refinements now place the compact tau-cell unit, induced Branch A wall domain, wall-Hessian package, top/Yukawa overlap, and absolute $\epsilon_\tau$ scale gate into one v0.2 single-package scaffold. The resulting $y_t^{{\rm parent}}={Y_T_PARENT:.10f}$ is a fixed dimensionless coefficient, not a measured top-mass prediction. The construction remains a candidate mechanism with explicit validation gates. It is not a completed Standard Model derivation, not a proof of any parent projection theory, and not an empirical claim.
+We describe a constrained Branch A projection/cohomology Higgs module in which
+the observed four-dimensional Higgs is treated as the visible projection of a
+tau-profiled parent field. The central reproducible calculation links a
+minimal $3+2$ stabilizer, the canonical hypercharge direction, a Higgs
+localization exponent $\nu_D=3/10$, and a zero-mode quartic overlap
+$I_4(3/10)={i4_d:.6f}$. Under the stated Branch A rule, the observed Higgs
+quartic corresponds to an order-one parent quartic rather than to an extreme
+hierarchy. The construction remains a candidate mechanism with explicit
+validation gates. It is not a completed Standard Model derivation, not a proof
+of any parent projection theory, and not an empirical claim.
 \end{{abstract}}
 
 \section{{Scope and Claim Boundary}}
@@ -854,6 +1189,29 @@ $\kappa_\tau^2=3/5$ used below. This numerical factor is therefore not fitted
 to the Higgs quartic; it is inherited from the stabilizer-compatible
 normalization of the hypercharge direction.
 
+\paragraph{{Spectral origin of the normalization.}}
+The stronger version of this statement is not merely trace normalization.  It
+would show that the compact tau geometry selects the same coefficient as a
+spectral invariant:
+\begin{{equation}}
+\kappa_\tau^2
+=
+\frac{{\operatorname{{Tr}}_{{\cal F}}(T_Y^2)}}{{\operatorname{{Tr}}_{{\cal F}}(Y^2)}}
+=\frac35 ,
+\end{{equation}}
+with the trace, fiber, and normalization fixed by $D_\tau$ and the compact
+domain rather than by a chosen convention.  Equivalently, the same value should
+appear as a heat-kernel/index residue of the protected hypercharge line:
+\begin{{equation}}
+a_Y(D_\tau)
+\propto
+\operatorname{{Res}}_{{s=0}}
+\operatorname{{Tr}}\!\left(T_Y^2|D_\tau|^{{-s}}\right).
+\end{{equation}}
+This is now a named gate: the spectral origin of $\kappa_\tau^2$ must be
+derived from the compact geometry before the $3/10$ exponent can be promoted
+from conditional target to theorem.
+
 \section{{Higgs Exponent and Zero Mode}}
 The Branch A localization postulate is treated here as an
 assumption/theorem-candidate:
@@ -880,6 +1238,26 @@ hypercharge line supplies the localization charge.  The proof obligation is
 therefore sharply defined: derive the wall connection that makes this
 assignment unavoidable.
 
+\paragraph{{Charge-to-exponent gate.}}
+The remaining nontrivial step is to derive the wall connection coefficient,
+not the zero-mode solution after the coefficient is given.  The target theorem
+is
+\begin{{equation}}
+D_\tau\;\Longrightarrow\;
+A_{{\tau,i}}(x)=\kappa_\tau^2Y_i f(x),
+\qquad
+f(x)=\tanh x ,
+\end{{equation}}
+with $\kappa_\tau^2=3/5$ fixed by the same canonical hypercharge normalization
+used in the stabilizer calculation.  If this theorem closes, the Higgs doublet
+exponent is no longer an independent input:
+\begin{{equation}}
+\nu_D=\kappa_\tau^2|Y_D|=\frac35\cdot\frac12=\frac3{{10}}.
+\end{{equation}}
+Thus the real open problem is the spectral/geometric origin of
+$A_{{\tau,i}}$; the value $3/10$ is then a consequence of the protected
+hypercharge eigenvalue and the universal wall metric coefficient.
+
 \section{{Theorem Status Summary}}
 \begin{{center}}
 \begin{{tabular}}{{p{{0.46\linewidth}}p{{0.42\linewidth}}}}
@@ -903,6 +1281,8 @@ minimal forcing parent-action scaffold & quotient/stability/BPS/domain candidate
 top determinant / radiative stability & open gate\\
 top/Yukawa slot and same-domain determinant pilot & sharpened open gate; not a physical determinant proof\\
 single-package Branch A parent action v0.2 & compact cell, wall domain, Q/regulator, and scale gate unified; not final action\\
+Q-paired compact-spectrum toy & finite-dimensional same-domain $Q$ demo; not physical orbifold theorem\\
+orbifold Q-domain theorem & boundary-domain target stated; compact self-adjoint proof open\\
 $y_t^{{\rm parent}}={Y_T_PARENT:.10f}$ & fixed dimensionless overlap coefficient; not a top-mass prediction\\
 $\epsilon_\tau$ absolute scale & universal parent density/stress-energy gate; still open\\
 Standard Model emergence program & separate roadmap, not a result of this paper\\
@@ -1084,6 +1464,37 @@ Q_i=\partial_x+\kappa_\tau^2Y_i\tanh x,
 and whose regulated determinant is compatible with the BRST/anomaly and
 radiative-stability gates.
 
+A first sharpened v0.1 target is now explicit enough to be falsifiable as a
+mathematical object:
+\begin{{equation}}
+{{\cal K}}_\tau=S^1/\mathbb Z_2,\qquad
+{{\cal A}}_\tau=
+\left(C^\infty({{\cal K}}_\tau)\otimes(M_3(\mathbb C)\oplus M_2(\mathbb C))\right)^{{\mathbb Z_2}},
+\end{{equation}}
+\begin{{equation}}
+{{\cal H}}_\tau=
+L^2({{\cal K}}_\tau)\otimes(\mathbb C^3\oplus\mathbb C^2)\otimes\mathbb C^2_{{\rm wall}},
+\qquad
+D_\tau=\sigma_1\partial_x+\sigma_2\kappa_\tau^2T_Y f(x)+D_{{\rm gap}} .
+\end{{equation}}
+This is not yet the final parent action.  Its value is that the next theorem is
+now concrete: classify the self-adjoint orbifold domains and show whether this
+single package gives a protected zero-mode index, paired positive spectrum,
+and admissible zeta/heat-kernel regulator without adding a separate Higgs
+sector by hand.
+
+The compact index target can be stated at the boundary level.  On the
+fundamental interval $I=[0,L]$, a Q-compatible domain must make the boundary
+form vanish:
+\begin{{equation}}
+\langle Q_\nu\psi,\phi\rangle-\langle\psi,Q_\nu^\dagger\phi\rangle
+=\left[\psi^*\phi\right]_0^L=0,
+\end{{equation}}
+while preserving $Q_\nu:{{\cal D}}_-\to{{\cal D}}_+$ and
+$Q_\nu^\dagger:{{\cal D}}_+\to{{\cal D}}_-$.  Proving this for the physical
+orbifold domain is the bridge from the Q-first toy pairing to a real compact
+index theorem.
+
 
 \section{{Detailed Gate Ledger And Companion Scope}}
 The C0--C20 blocks are treated here as a compact gate ledger for the main
@@ -1132,7 +1543,9 @@ that all six penalties vanish. &
 No minimality theorem or competitor classification is yet proven.\\
 C5 Local Spectrum Gate; C6 Compact Spectrum Boundary-Value Problem; C7 Competitor Audit For The C4 Minimum &
 The local Pöschl--Teller spectrum, compact boundary-value problem, and
-competitor audit define the first spectrum-level tests. &
+competitor audit define the first spectrum-level tests; the new Q-first toy
+demo shows exact positive-spectrum pairing when $H_\pm$ are built from one
+finite-dimensional $Q$. &
 A solved compact spectrum and uniqueness theorem are still missing.\\
 C8 Minimality Theorem Candidate; C9 Compact Spectrum Pilot; C10 Uniqueness Proof-Obligation Split &
 The minimality theorem candidate, numerical compact spectrum pilot, and
@@ -1441,6 +1854,22 @@ that the same quotient/domain structure that produces the zero mode also
 controls the top-sensitive radiative terms.  Otherwise the construction remains
 a localized-overlap model rather than a Higgs-naturalness mechanism.
 
+The packet now includes a toy mass-derivative stress test for this gate.  It
+computes the forbidden top-sensitive curvature proxy under paired and shifted
+positive spectra, and under two cutoff families.  The paired toy spectrum
+stays zero under both regulators, while the shifted spectrum leaves a
+regulator-dependent residue.  This is not the physical top determinant, but it
+fixes the diagnostic that the real calculation must pass.
+
+\begin{{figure}}[h]
+\centering
+\includegraphics[width=0.86\linewidth]{{figures/paper4_top_mass_derivative_toy_stress.pdf}}
+\caption{{Toy mass-derivative stress test for the top determinant gate.  The
+figure illustrates the required diagnostic behavior: same-domain paired spectra
+remove the forbidden curvature, while a small spectral/domain mismatch leaves a
+regulator-sensitive residue.}}
+\end{{figure}}
+
 \section{{What Is Reproduced And What Is Not}}
 The current package reproduces:
 \begin{{itemize}}
@@ -1479,6 +1908,7 @@ The repository includes optional Wolfram Language audit scripts as an independen
 \item \texttt{{BranchA\_Stabilizer\_Hypercharge\_Audit.wl}} checks $\operatorname{{Tr}}T_\Sigma=0$, $\operatorname{{Tr}}T_\Sigma^2=1/2$, $\operatorname{{Tr}}T_Y^2=1/2$, and $T_\Sigma=-T_Y$, thereby verifying the stabilizer and hypercharge-normalization origin of the $3/5$ factor;
 \item \texttt{{G2\_Unoriented\_Line\_Quotient\_Audit.wl}} checks that the line projector for $T_Y$ is invariant under $T_Y\mapsto -T_Y$, that $\operatorname{{Tr}}[(fT_Y)^2]=f^2/2$, and that the unit-line condition gives the two oriented representatives $f=\pm1$;
 \item \texttt{{Projection\_BRST\_Skeleton.wl}} checks only the algebraic skeleton $s^2H=0$ and $Q_Dh_D=0$.
+\item \texttt{{Compact\_Gate\_Ledger\_Audit.wl}} checks that the generated full-derivation ledger has continuous C0--C20 gate IDs, includes the C16/C17/C20 subgates, records the finite-residue and endpoint-matching gates, and keeps the claim boundary at proposition/program level rather than solved-proof level.
 \end{{itemize}}
 The generated log files are included in the reproducibility packet. These checks support the formula and algebra audit. They verify the normalization source of $3/5$, but they do not derive the localization postulate $\nu_i=\kappa_\tau^2|Y_i|$, prove anomaly freedom, prove regulator safety, or establish radiative stability.
 
@@ -1558,6 +1988,15 @@ same compact tau cell rather than declared as a disconnected Higgs-sector
 input. The most useful positive result would be a compact spectral or cell
 geometry whose low-lying sector selects the $3+2$ stabilizer and whose defect
 sector induces the hypercharge wall.
+\item \textbf{{Explicit compact-geometry v0.1.}} The current v0.1 target is
+the orbifold spectral package ${{\cal K}}_\tau=S^1/\mathbb Z_2$ with algebra
+$(C^\infty({{\cal K}}_\tau)\otimes(M_3(\mathbb C)\oplus M_2(\mathbb C)))^{{\mathbb Z_2}}$,
+Hilbert domain
+$L^2({{\cal K}}_\tau)\otimes(\mathbb C^3\oplus\mathbb C^2)\otimes\mathbb C^2_{{\rm wall}}$,
+and Dirac-like wall operator
+$D_\tau=\sigma_1\partial_x+\sigma_2\kappa_\tau^2T_Yf(x)+D_{{\rm gap}}$.
+A proof must still show that the self-adjoint orbifold domain, index residue,
+positive-spectrum pairing, and regulator all come from this single package.
 \item \textbf{{Standard Model emergence.}} A broader Branch A emergence program
 must still derive the representation content, gauge dynamics, anomaly
 cancellation, Yukawa pattern, and low-energy effective field theory from the
@@ -1568,6 +2007,63 @@ These gates make the status of the paper precise. The quartic-overlap result is
 a reproducible and nontrivial mechanism target, but the localization,
 cohomological consistency, and radiative-stability gates must all close before
 the module can be promoted to a derivation.
+
+\section{{Compact Spectral Protection Program}}
+The technical companion keeps the full operator-domain ledger, but the main
+paper needs the core logic explicitly.  The protection route is not merely a
+localized wave-function ansatz.  It is the following compact spectral program:
+\begin{{equation}}
+\text{{compact domain}}
+\rightarrow
+Q\text{{-paired self-adjoint operators}}
+\rightarrow
+\text{{index residue}}
+\rightarrow
+\text{{zeta-determinant cancellation}}
+\rightarrow
+\text{{allowed finite residues only}} .
+\end{{equation}}
+The candidate compact geometry is the orbifold package
+${{\cal K}}_\tau=S^1/\mathbb Z_2$ with a first-order wall operator $Q_\nu$.
+The required domain theorem is:
+\begin{{equation}}
+Q_\nu:{{\cal D}}_-\to{{\cal D}}_+,\qquad
+H_-=Q_\nu^\dagger Q_\nu,\qquad H_+=Q_\nu Q_\nu^\dagger ,
+\end{{equation}}
+with $H_\pm$ self-adjoint on one shared compact domain.  If this holds, then
+for every positive eigenvalue $\lambda>0$ the map
+\begin{{equation}}
+\psi\mapsto \lambda^{{-1/2}}Q_\nu\psi
+\end{{equation}}
+pairs the positive spectra of $H_-$ and $H_+$ with equal multiplicity.  The
+bulk positive-mode determinant then cancels at the zeta level, leaving only
+kernel/index, anomaly/Ward, boundary, or frozen matching residues.
+
+The negative status is equally important:
+\begin{{itemize}}
+\item a conditional compact spectral theorem is established only within the
+stated operator-domain assumptions; the parent action has not yet selected the
+required compact domain;
+\item conditional positive-spectrum zeta-determinant cancellation follows
+within the same-domain setup, and a physical top finite-residue extraction gate
+is formulated, but the finite residue has not yet been computed from the parent
+QFT;
+\item same-domain anomaly/Ward and representation trace-cancellation gates are
+formulated, but the parent-derived representation complex has not yet been
+computed;
+\item a UV/continuum admissibility criterion and microscopic completion target
+are formulated, but no convergent parent action family is supplied;
+\item a physical matching map and endpoint protocol are formulated, but no
+numerical matching to the measured Higgs vev, top mass, or collider observables
+has been performed.
+\end{{itemize}}
+
+This is why the compact spectral program is central to the paper.  Without it,
+the construction is only a localization model.  With it, the Higgs-lightness
+question becomes a sharply defined spectral problem: prove the self-adjoint
+domain, prove positive-spectrum pairing, prove regulator/Ward compatibility,
+and then compute the top-sensitive finite residue from the parent operator
+family.
 
 \section{{Next Theorem Handoff}}
 The related structures in Section 2 are useful only if they sharpen the next
@@ -1657,7 +2153,18 @@ the measured Higgs vev or top mass;
 \end{{itemize}}
 
 \section{{Conclusion}}
-The Branch A Higgs module links a $3+2$ stabilizer, hypercharge normalization, a $\operatorname{{sech}}^{{3/10}}$ visible zero mode, and a quartic overlap requiring an order-one parent quartic. The paper establishes a compact, reproducible mechanism target: if the Branch A localization rule is derived, the Higgs quartic is mapped to a natural parent-scale coupling rather than an extreme hierarchy. The newest parent-selection refinements make the $3+2$ input less arbitrary by linking it to two protected visible clusters, $\epsilon_3/\epsilon_2$ invariant roles, and an invariant/anomaly bridge. The localization-forcing update moves the rule $\nu_i=3|Y_i|/5$ from a standalone postulate to a conditional F1--F8 parent-action forcing route. The v0.2 single-package update now places the compact tau cell, induced wall domain, same-domain $Q$/regulator package, top/Yukawa overlap, and absolute $\epsilon_\tau$ scale blocker in one scaffold. This strengthens the mechanism because the remaining free pieces are no longer diffuse. The hard blockers are now sharply identified: an explicit final parent action, continuum/UV completion, a concrete compact tau-cell geometry, QFT-level BRST/anomaly/regulator closure, top-determinant radiative stability, and physical matching. The manuscript still does not establish the full parent theory, the measured Higgs vev, the measured top mass, the Standard Model, or the Higgs hierarchy solution. Its current contribution is narrower: it reduces the Higgs proof problem to the conditional chain $S_{{\rm parent}}\Rightarrow$ Branch A gates $\Rightarrow$ SM-compatible Higgs sector, and makes the failure modes explicit. The next paper-grade step is to turn the scaffold into a microscopic parent action, derive the compact-cell and scale ingredients from it, complete the projection-BRST and physical top-determinant gates, and only then compare the implied heavy-sector window against collider constraints.
+The Branch A Higgs module links a $3+2$ stabilizer, hypercharge normalization,
+a $\operatorname{{sech}}^{{3/10}}$ visible zero mode, and a quartic overlap
+requiring an order-one parent quartic. The paper establishes a compact,
+reproducible mechanism target: if the Branch A localization rule is derived,
+the Higgs quartic is mapped to a natural parent-scale coupling rather than an
+extreme hierarchy. The hard blockers are now sharply identified: an explicit
+final parent action, continuum/UV completion, a concrete compact tau-cell
+geometry, QFT-level BRST/anomaly/regulator closure, top-determinant radiative
+stability, and physical matching. The manuscript still does not establish the
+full parent theory, the measured Higgs vev, the measured top mass, the Standard
+Model, or the Higgs hierarchy solution. The present result is a mechanism
+target and spectral proof program, not a completed Higgs-sector derivation.
 
 \bibliographystyle{{plain}}
 \bibliography{{references}}
@@ -1811,7 +2318,7 @@ def full_derivation_tex() -> str:
     toy_mass = Y_T_PARENT / math.sqrt(2.0)
     return rf"""\documentclass[11pt]{{article}}
 \usepackage[margin=0.85in]{{geometry}}
-\usepackage{{amsmath,amssymb,booktabs,hyperref,xurl,longtable,array}}
+\usepackage{{amsmath,amssymb,booktabs,graphicx,hyperref,xurl,longtable,array}}
 \hypersetup{{colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue}}
 \setlength{{\parskip}}{{0.45em}}
 \setlength{{\parindent}}{{0pt}}
@@ -1910,6 +2417,38 @@ and $T_\Sigma=-T_Y$.  The Branch A normalization is therefore
 This is not fitted to the Higgs quartic.  It comes from canonical normalization
 of the unique traceless Abelian line in the $3+2$ stabilizer.
 
+\section{{Spectral Origin Of The Normalization Gate}}
+The next upgrade is to derive the same coefficient from the compact spectral
+geometry rather than from a normalization convention.  In the v0.1 compact
+geometry, the target is
+\begin{{equation}}
+\kappa_\tau^2
+=
+\frac{{\operatorname{{Tr}}_{{\cal F}}(T_Y^2)}}{{\operatorname{{Tr}}_{{\cal F}}(Y^2)}}
+=\frac35 ,
+\end{{equation}}
+where the finite fiber ${{\cal F}}=\mathbb C^3\oplus\mathbb C^2$ and trace
+functional are selected by the compact domain.  A more intrinsic version would
+express the same value as a heat-kernel or index residue:
+\begin{{equation}}
+\kappa_\tau^2
+\sim
+\frac{{\operatorname{{Res}}_{{s=0}}\operatorname{{Tr}}(T_Y^2|D_\tau|^{{-s}})}}
+{{\operatorname{{Res}}_{{s=0}}\operatorname{{Tr}}(Y^2|D_\tau|^{{-s}})}} .
+\end{{equation}}
+The proof obligation is therefore:
+\begin{{enumerate}}
+\item the compact spectrum must select the trace functional;
+\item the protected hypercharge line must be an eigenline or index residue of
+the compact operator;
+\item the residue ratio must be stable under allowed regulator choices;
+\item no alternative Abelian line may give a lower selection penalty.
+\end{{enumerate}}
+If this closes, the factor $3/5$ becomes a spectral number of the compact
+geometry.  Combined with the charge-to-exponent theorem target, this would turn
+$\nu_D=3/10$ into a genuine geometric/spectral consequence rather than a
+conditional Branch A input.
+
 \section{{Unoriented Line And Two-Vacuum Quotient}}
 The Branch A Abelian direction is treated as an internal line rather than as a
 signed observable vector:
@@ -1975,6 +2514,47 @@ For the Higgs doublet,
 This is the current natural-origin derivation.  It becomes a proof only when
 the parent action derives the wall line, BPS wall, same-domain Hessian, and
 chiral admissibility.
+
+\section{{Charge-To-Exponent Theorem Target}}
+The value $\nu_H=3/10$ has two ingredients.  The first is already algebraic:
+canonical Branch A normalization gives
+\begin{{equation}}
+\kappa_\tau^2=\frac35,\qquad |Y_D|=\frac12 .
+\end{{equation}}
+The second is still the hard gate: the compact geometry must show that the
+wall connection seen by a component with hypercharge $Y_i$ is exactly
+\begin{{equation}}
+A_{{\tau,i}}(x)=\kappa_\tau^2Y_i f(x)
+\end{{equation}}
+on the self-adjoint wall domain.  If this is derived, the first-order local
+operator is forced:
+\begin{{equation}}
+Q_i=\partial_x+A_{{\tau,i}}(x),
+\qquad
+Q_i h_i=0 .
+\end{{equation}}
+For the Bogomolny wall $f(x)=\tanh x$,
+\begin{{equation}}
+h_i(x)\propto
+\exp\left[-\kappa_\tau^2Y_i\int^x\tanh u\,du\right]
+=\operatorname{{sech}}^{{\kappa_\tau^2Y_i}}x,
+\end{{equation}}
+and normalizability gives
+\begin{{equation}}
+\nu_i=\kappa_\tau^2|Y_i|.
+\end{{equation}}
+
+Therefore the derivation problem is now sharply localized.  One must prove
+that the compact spectral geometry selects a universal hypercharge-line
+connection coefficient $\kappa_\tau^2=3/5$ and forbids extra component-dependent
+connection terms:
+\begin{{equation}}
+A_{{\tau,i}}(x)\neq
+\kappa_\tau^2Y_i f(x)+\delta A_i(x)
+\end{{equation}}
+unless $\delta A_i$ is Q-exact, quotient-null, or massive/leakage-suppressed.
+This is the precise theorem that would turn the current $3/10$ input into a
+geometric/spectral consequence.
 
 \section{{F1--F8 Forcing Theorem Candidate}}
 The stronger theorem-candidate says the localization rule is forced if the
@@ -2119,6 +2699,66 @@ R_{{\rm run}}=\exp\left[-\int \gamma_t(\mu)d\ln\mu\right].
 This is a shape requirement only.  $\gamma_t$, $R_{{\rm match}}$, regulator,
 and matching scale must come from the same QFT closure before a physical top
 mass can be claimed.
+
+\section{{Physical Matching Admissibility Map}}
+The physical matching problem is now a forward map, not a backsolve:
+\begin{{equation}}
+S_{{\rm parent}}
+\longrightarrow
+(\epsilon_\tau,C_A,\mu_\tau({{\cal K}}_\tau),N_\tau,\hat E_{{\rm wall}})
+\longrightarrow
+\Lambda_A
+\longrightarrow
+(v_{{\rm eff}},y_t^{{\rm phys}},m_H,m_t,\Delta g/g).
+\end{{equation}}
+The forbidden reverse map is
+\begin{{equation}}
+(v_{{\rm obs}},m_H^{{\rm obs}},m_t^{{\rm obs}})
+\not\Longrightarrow
+(\epsilon_\tau,C_A,R_t).
+\end{{equation}}
+Thus physical matching is admissible only if the absolute scale, running,
+threshold correction, and visible gauge normalization are fixed upstream of
+the measured Higgs and top endpoints.  A successful matching calculation may
+compare to the measured vev, Higgs mass, top mass, and collider coupling
+constraints, but it may not use those numbers to define the parent scale or
+the top matching factor.
+
+\section{{Numerical Endpoint Matching Protocol}}
+The endpoint comparison can also be made falsifiable before it is executed.
+Once the parent calculation outputs
+\begin{{equation}}
+\Theta_{{\rm pred}}
+=
+(\epsilon_\tau,C_A,\mu_\tau,N_\tau,\hat E_{{\rm wall}},
+R_t^{{\rm fin}},Z_H,Z_t),
+\end{{equation}}
+the matching code must freeze these numbers and compute
+\begin{{equation}}
+{{\cal M}}(\Theta_{{\rm pred}})
+=
+(v_{{\rm eff}},m_H,m_t,\Delta g_H,\Delta g_t).
+\end{{equation}}
+Only then may the result be compared with the observed endpoint vector
+\begin{{equation}}
+{{\cal E}}_{{\rm obs}}
+=
+(v_{{\rm obs}},m_H^{{\rm obs}},m_t^{{\rm obs}},
+\Delta g_H^{{\rm obs}},\Delta g_t^{{\rm obs}}).
+\end{{equation}}
+The pass/fail statistic should be declared before looking at the residuals,
+for example
+\begin{{equation}}
+\chi_{{\rm end}}^2
+=
+({{\cal M}}(\Theta_{{\rm pred}})-{{\cal E}}_{{\rm obs}})^T
+\Sigma_{{\rm obs}}^{{-1}}
+({{\cal M}}(\Theta_{{\rm pred}})-{{\cal E}}_{{\rm obs}}).
+\end{{equation}}
+This does not perform numerical endpoint matching.  It defines the allowed
+order of operations: derive, freeze, run, compare.  Any workflow that adjusts
+$\epsilon_\tau$, $C_A$, $R_t^{{\rm fin}}$, or $Z_H$ after seeing the endpoint
+residuals is a failed matching protocol, even if the final numbers look good.
 
 \section{{Dimensional Obstruction}}
 The Branch A action currently fixes dimensionless data.  A dimensionless action
@@ -2296,6 +2936,797 @@ candidate.  It realizes the C0--C2 architecture in one object, but it is still
 not a proof until the final $S_{{\rm parent}}$ selects this orbifold base,
 two-role fiber, even algebra, and wall action.
 
+\section{{C3.1 Compact Geometry v0.1 Computation Target}}
+The v0.1 compact geometry is not only a mnemonic for the desired result; it
+defines a specific calculation.  Choose a self-adjoint domain
+${{\cal D}}(D_\tau)$ on $S^1/\mathbb Z_2$ such that the orbifold parity
+preserves the physical projector line while exchanging the two oriented
+representatives:
+\begin{{equation}}
+\Pi P_Y\Pi^{-1}=P_Y,\qquad
+T_Y\sim -T_Y .
+\end{{equation}}
+The zero-mode/index gate is then
+\begin{{equation}}
+{{\rm ind}}(Q_i)=\dim\ker Q_i-\dim\ker Q_i^\dagger,
+\qquad
+Q_i=\partial_x+\kappa_\tau^2Y_i f(x).
+\end{{equation}}
+For the local kink limit, the candidate gives the normalizable branch
+\begin{{equation}}
+h_i(x)=N_i\operatorname{{sech}}^{{\kappa_\tau^2|Y_i|}}x .
+\end{{equation}}
+The compact theorem target is stronger: prove the same zero-mode residue and
+positive-spectrum pairing on the self-adjoint orbifold domain, not merely in
+the infinite-line local limit.
+
+\section{{C3.1 Master Compact Spectral Theorem Statement}}
+The local pieces can be condensed into the theorem that would change the status
+of the framework.  Let $Q:{{\cal D}}(Q)\subset{{\cal H}}_-\to{{\cal H}}_+$ be
+the parent-selected wall operator on the compact orbifold domain, and set
+\begin{{equation}}
+H_-=Q^\dagger Q,\qquad H_+=QQ^\dagger .
+\end{{equation}}
+If the final parent action proves the following four properties,
+\begin{{enumerate}}
+\item $Q$ is closed, densely defined, and Fredholm on a compact self-adjoint
+orbifold domain;
+\item $H_\pm$ are non-negative self-adjoint operators with compact resolvent;
+\item the anomaly/Ward domain is the same domain used by $Q$, $H_\pm$, and
+$\det_\zeta$;
+\item the boundary form vanishes without endpoint-tuned spectator fields,
+\end{{enumerate}}
+then the theorem-level consequences are fixed:
+\begin{{align}}
+{{\rm Spec}}_+(H_-)&={{\rm Spec}}_+(H_+)\quad\text{{with multiplicity}},\\
+{{\rm ind}}(Q)&=\dim\ker Q-\dim\ker Q^\dagger,\\
+\log\frac{{\det_\zeta H_-^{{\rm pos}}}}{{\det_\zeta H_+^{{\rm pos}}}}&=0 .
+\end{{align}}
+All surviving finite terms must then belong to the explicit residue list
+\begin{{equation}}
+\log\Delta
+=
+\log\Delta_{{\rm index}}
++\log\Delta_{{\rm anomaly}}
++\log\Delta_{{\rm boundary}}
++\log\Delta_{{\rm matching}} .
+\end{{equation}}
+This is the real breakthrough theorem.  C3.1b proves the abstract pairing
+lemma, C3.1c gives one explicit Fredholm relative-orbifold domain, C3.1d gives
+the compact self-adjoint spectrum consequence, and C3.1e checks compact
+resolvent for the relative-orbifold realization.  What is still missing is the
+parent-selection and anomaly-compatible domain closure that would make this
+theorem physical rather than merely available.
+
+\section{{C3.1a Orbifold Q-Domain And Index Theorem Target}}
+The missing compact theorem can be stated as a boundary-domain problem.  Let
+$I=[0,L]$ be the fundamental interval of $S^1/\mathbb Z_2$ and let
+\begin{{equation}}
+Q_\nu=\partial_x+\nu f(x),\qquad Q_\nu^\dagger=-\partial_x+\nu f(x)
+\end{{equation}}
+act between two parity sectors ${{\cal H}}_-$ and ${{\cal H}}_+$.  Integration
+by parts gives the boundary form
+\begin{{equation}}
+\langle Q_\nu\psi,\phi\rangle_{{+}}
+-
+\langle \psi,Q_\nu^\dagger\phi\rangle_{{-}}
+=
+\left[\psi^*(x)\phi(x)\right]_0^L .
+\end{{equation}}
+Therefore a Q-compatible orbifold domain must impose boundary conditions for
+which this boundary form vanishes and for which
+\begin{{equation}}
+Q_\nu:{{\cal D}}_-\to{{\cal D}}_+,\qquad
+Q_\nu^\dagger:{{\cal D}}_+\to{{\cal D}}_- .
+\end{{equation}}
+The theorem target is then:
+\begin{{enumerate}}
+\item $H_-=Q_\nu^\dagger Q_\nu$ and $H_+=Q_\nu Q_\nu^\dagger$ are self-adjoint
+on the induced domains;
+\item every positive $H_-$ eigenmode is mapped by $Q_\nu$ to a positive $H_+$
+eigenmode with the same eigenvalue, and conversely by $Q_\nu^\dagger$;
+\item the unpaired residue is exactly
+\begin{{equation}}
+{{\rm ind}}(Q_\nu)=\dim\ker Q_\nu-\dim\ker Q_\nu^\dagger;
+\end{{equation}}
+\item for the Branch A wall sector this index is stable under compact
+orbifold regularization and equals the protected zero-mode count.
+\end{{enumerate}}
+This is the real compact-index gate.  The Q-first finite-dimensional demo
+proves the algebraic pairing mechanism once such a domain exists; it does not
+itself prove that the physical orbifold boundary conditions select the domain.
+
+\section{{C3.1b Proof Of The Q-Pairing Lemma}}
+The abstract pairing statement can be proved independently of the detailed
+Branch A physics.  Let $Q:{{\cal D}}(Q)\subset{{\cal H}}_-\to{{\cal H}}_+$ be a
+closed densely defined operator with adjoint $Q^\dagger$, and define
+\begin{{equation}}
+H_-=Q^\dagger Q,\qquad H_+=QQ^\dagger .
+\end{{equation}}
+Assume the boundary conditions make the integration-by-parts boundary form
+vanish, so that these are the adjoint operators on the stated domains.  Then
+$H_-$ and $H_+$ are non-negative self-adjoint operators on their induced
+domains.  If
+\begin{{equation}}
+H_-\psi=\lambda\psi,\qquad \lambda>0,
+\end{{equation}}
+then $Q\psi\neq0$, because $Q\psi=0$ would imply
+$\lambda\|\psi\|^2=\langle\psi,H_-\psi\rangle=\|Q\psi\|^2=0$.  Moreover,
+\begin{{equation}}
+H_+(Q\psi)=QQ^\dagger Q\psi=QH_-\psi=\lambda Q\psi .
+\end{{equation}}
+Thus $Q$ maps every positive $H_-$ eigenvector to a positive $H_+$ eigenvector
+with the same eigenvalue.  Conversely, if $H_+\phi=\lambda\phi$ with
+$\lambda>0$, then $Q^\dagger\phi\neq0$ and
+\begin{{equation}}
+H_-(Q^\dagger\phi)=Q^\dagger QQ^\dagger\phi=Q^\dagger H_+\phi
+=\lambda Q^\dagger\phi .
+\end{{equation}}
+The maps are inverse up to the scalar $\lambda$:
+\begin{{equation}}
+Q^\dagger Q\psi=\lambda\psi,\qquad
+QQ^\dagger\phi=\lambda\phi .
+\end{{equation}}
+Therefore the positive eigenspaces are isomorphic.  The only possible unpaired
+states lie at $\lambda=0$, where
+\begin{{equation}}
+\ker H_-=\ker Q,\qquad \ker H_+=\ker Q^\dagger .
+\end{{equation}}
+If $Q$ is Fredholm on the compact domain, the unpaired residue is
+\begin{{equation}}
+{{\rm ind}}(Q)=\dim\ker Q-\dim\ker Q^\dagger .
+\end{{equation}}
+This proves the compact-index algebraic core: once a physical orbifold domain
+really supplies such a closed Fredholm $Q$, the positive spectra pair and only
+the index/anomaly/boundary/matching residues can remain.  What is still open is
+the physical selection of that domain by the final parent action.
+
+\section{{C3.1c Explicit Relative-Orbifold Domain Proof}}
+One explicit compact-domain realization can now be proved.  Let
+\begin{{equation}}
+{{\cal H}}_-=L^2([0,L]),\qquad {{\cal H}}_+=L^2([0,L])
+\end{{equation}}
+and choose the orbifold-relative domain pair
+\begin{{equation}}
+{{\cal D}}(Q_\nu)=H^1([0,L]),\qquad
+{{\cal D}}(Q_\nu^\dagger)=H^1_0([0,L]).
+\end{{equation}}
+Here $H^1_0$ means that the field vanishes at the two orbifold fixed points.
+This is the relative/Dirichlet parity sector, while $H^1$ is the maximal
+partner sector.  The boundary form vanishes because
+\begin{{equation}}
+\phi(0)=\phi(L)=0
+\quad\Longrightarrow\quad
+\left[\psi^*\phi\right]_0^L=0
+\end{{equation}}
+for all $\psi\in H^1$ and $\phi\in H^1_0$.  Therefore the formal adjoint of
+$Q_\nu=\partial_x+\nu f(x)$ on $H^1$ is exactly
+$Q_\nu^\dagger=-\partial_x+\nu f(x)$ on $H^1_0$.
+
+The operator $Q_\nu:H^1\to L^2$ is closed and Fredholm on the compact interval:
+it is a first-order elliptic operator with compact Sobolev embedding
+$H^1\hookrightarrow L^2$ and finite-dimensional kernel/cokernel.  Its kernel is
+the solution space of
+\begin{{equation}}
+\partial_x\psi+\nu f(x)\psi=0,
+\qquad
+\psi(x)=C\exp\left[-\nu\int_0^x f(u)\,du\right].
+\end{{equation}}
+This solution lies in $H^1([0,L])$ for smooth bounded $f$, so
+\begin{{equation}}
+\dim\ker Q_\nu=1.
+\end{{equation}}
+The adjoint kernel obeys
+\begin{{equation}}
+-\partial_x\phi+\nu f(x)\phi=0,\qquad \phi\in H^1_0([0,L]).
+\end{{equation}}
+Its nonzero solutions cannot vanish at both endpoints unless the integration
+constant is zero.  Hence
+\begin{{equation}}
+\dim\ker Q_\nu^\dagger=0.
+\end{{equation}}
+Thus the relative-orbifold domain has
+\begin{{equation}}
+{{\rm ind}}(Q_\nu)=1.
+\end{{equation}}
+By the Q-pairing lemma, the positive spectra of $Q_\nu^\dagger Q_\nu$ and
+$Q_\nu Q_\nu^\dagger$ are paired, and the only unpaired compact residue is the
+single protected zero mode.  This proves an explicit compact-domain theorem for
+the v0.1 relative-orbifold choice.
+
+The remaining physics question is no longer whether such a compact Fredholm
+$Q$ exists.  It does.  The remaining question is whether the final parent
+action uniquely selects this relative-orbifold domain rather than another
+self-adjoint extension.
+
+\section{{C3.1c$'$ Q-Compatible Orbifold Extension Classification}}
+The self-adjoint extension problem can be reduced to boundary data.  For
+$Q_\nu=\partial_x+\nu f(x)$ on $[0,L]$, the first-order boundary pairing is
+\begin{{equation}}
+B(\psi,\phi)=\left[\psi^*\phi\right]_0^L
+=\psi(L)^*\phi(L)-\psi(0)^*\phi(0).
+\end{{equation}}
+A Q-compatible extension must choose boundary subspaces
+$\mathcal B_-\subset\mathbb C^2$ for $\psi|_{{0,L}}$ and
+$\mathcal B_+\subset\mathbb C^2$ for $\phi|_{{0,L}}$ such that
+\begin{{equation}}
+B(\psi,\phi)=0
+\qquad
+\hbox{{for all }}\psi|_{{0,L}}\in\mathcal B_-,
+\ \phi|_{{0,L}}\in\mathcal B_+ .
+\end{{equation}}
+Thus $\mathcal B_+$ must be contained in the boundary-form annihilator of
+$\mathcal B_-$.  The relative-orbifold choice is the extremal pair
+\begin{{equation}}
+\mathcal B_-=\mathbb C^2,\qquad \mathcal B_+=\{{0\}}.
+\end{{equation}}
+It is maximal on the minus side and Dirichlet on the plus side, hence it removes
+the boundary form without adding a tunable phase, endpoint mixing matrix, or
+Robin angle.  The induced second-order conditions are
+\begin{{equation}}
+\phi|_{{0,L}}=0,\qquad Q_\nu\psi|_{{0,L}}=0,
+\end{{equation}}
+which are exactly the Dirichlet/Robin pair used above.
+
+Other self-adjoint extensions are mathematically possible.  For example,
+phase-periodic or mixed endpoint conditions can make second-order operators
+self-adjoint.  They are not Q-compatible minimal survivors unless they also
+preserve the first-order pairing, the index residue, orbifold exchange symmetry,
+and the no-free-endpoint-parameter rule.  In the C4 lexicographic ordering, the
+relative-orbifold pair is therefore the first minimal survivor: it has no
+endpoint angle, no endpoint mixing, no field-specific boundary coefficient, and
+keeps the single protected index residue.
+
+This is not yet a complete classification of all self-adjoint extensions.  It is
+a classification of the Q-compatible minimal class relevant to the compact
+spectral theorem.  A lower-complexity Q-compatible extension with the same
+index, no endpoint parameter, and anomaly-compatible domain closure would
+falsify this selection claim.
+
+\section{{C3.1d Conditional Compact Self-Adjoint Spectrum Theorem}}
+The preceding results give a conditional compact spectral theorem needed by
+the determinant gate.  Assume:
+\begin{{enumerate}}
+\item $Q:{{\cal D}}(Q)\subset{{\cal H}}_-\to{{\cal H}}_+$ is closed, densely
+defined, and Fredholm;
+\item the compact orbifold domain makes the boundary form vanish, so
+$Q^\dagger$ is the true adjoint on ${{\cal D}}(Q^\dagger)$;
+\item $H_-=Q^\dagger Q$ and $H_+=QQ^\dagger$ have compact resolvent.
+\end{{enumerate}}
+Then $H_-$ and $H_+$ are non-negative self-adjoint operators with discrete
+spectrum of finite multiplicity:
+\begin{{equation}}
+0\leq\lambda_0^\pm\leq\lambda_1^\pm\leq\cdots,\qquad
+\lambda_n^\pm\to\infty .
+\end{{equation}}
+By the Q-pairing lemma, the positive spectral subspaces are isomorphic:
+\begin{{equation}}
+{{\rm Spec}}_+(H_-)= {{\rm Spec}}_+(H_+)
+\end{{equation}}
+with multiplicities.  The only unpaired part is
+\begin{{equation}}
+\ker H_- - \ker H_+ = \ker Q - \ker Q^\dagger,
+\end{{equation}}
+whose signed dimension is ${{\rm ind}}(Q)$.
+
+Define positive-spectrum zeta functions by
+\begin{{equation}}
+\zeta_-^{{\rm pos}}(s)=\sum_{{\lambda_n^->0}}(\lambda_n^-)^{{-s}},
+\qquad
+\zeta_+^{{\rm pos}}(s)=\sum_{{\lambda_n^+>0}}(\lambda_n^+)^{{-s}} .
+\end{{equation}}
+Because the positive spectra agree with multiplicity,
+\begin{{equation}}
+\zeta_-^{{\rm pos}}(s)=\zeta_+^{{\rm pos}}(s)
+\end{{equation}}
+where both sides are defined, and by analytic continuation wherever the zeta
+regularization is admissible.  Therefore the positive determinant ratio
+cancels:
+\begin{{equation}}
+\log\frac{{\det_\zeta H_-^{{\rm pos}}}}{{\det_\zeta H_+^{{\rm pos}}}}
+=
+-\zeta_-^{{\rm pos}}\prime(0)+\zeta_+^{{\rm pos}}\prime(0)=0 .
+\end{{equation}}
+Thus the determinant gate is reduced to residues:
+\begin{{equation}}
+\log\Delta
+=
+\log\Delta_{{\rm index}}
+\;+\;
+\log\Delta_{{\rm anomaly}}
+\;+\;
+\log\Delta_{{\rm boundary}}
+\;+\;
+\log\Delta_{{\rm matching}} .
+\end{{equation}}
+This establishes the compact self-adjoint spectral proposition inside the
+relative-orbifold v0.1 domain.  In that domain, the index residue is one.  The
+remaining nontrivial physics gates are anomaly compatibility, regulator choice,
+boundary residue classification, and parent-action selection of this domain.
+
+\section{{C3.1d$'$ Protected Index Residue Theorem}}
+For the Q-compatible relative-orbifold domain of C3.1c and C3.1c$'$, the kernel
+structure can be stated as a protected index theorem.  The minus-sector kernel
+is generated by
+\begin{{equation}}
+\psi_0(x)=C\exp\left[-\nu\int_0^x f(u)\,du\right],
+\end{{equation}}
+which lies in $H^1([0,L])$ for smooth bounded $f$.  The plus-sector adjoint
+kernel satisfies
+\begin{{equation}}
+Q_\nu^\dagger\phi=0,\qquad \phi(0)=\phi(L)=0,
+\end{{equation}}
+and therefore has only the zero solution.  Hence
+\begin{{equation}}
+\ker H_-=\operatorname{{span}}\{{\psi_0\}},\qquad
+\ker H_+=\{{0\}},\qquad
+{{\rm ind}}(Q_\nu)=1 .
+\end{{equation}}
+Since the positive spectra are paired, the entire unpaired compact contribution
+is the single protected index residue.  In determinant language,
+\begin{{equation}}
+\log\Delta
+=\log\Delta_{{\rm index}}
++\log\Delta_{{\rm anomaly}}
++\log\Delta_{{\rm boundary}}
++\log\Delta_{{\rm matching}},
+\end{{equation}}
+with no allowed positive-mode bulk determinant residue.
+
+The index is stable under continuous deformations of $f$, $M_{{\rm orb}}$, or
+the smooth thin-barrier regulator as long as:
+\begin{{enumerate}}
+\item $Q_\nu$ remains Fredholm;
+\item the Q-compatible boundary class is unchanged;
+\item no leakage zero mode crosses into the protected sector;
+\item anomaly/Ward closure uses the same domain.
+\end{{enumerate}}
+This is the protected index residue theorem needed by the framework.  The
+remaining open part is not the kernel algebra; it is proving that the final
+compact-cell action selects the same Q-compatible domain and anomaly-compatible
+representation complex.
+
+The determinant and regulator must then be defined from the same compact
+spectrum:
+\begin{{equation}}
+\zeta_i^\pm(s)=\sum_{{\lambda_n^\pm>0}}(\lambda_n^\pm)^{{-s}},
+\qquad
+\log\Delta_i=-\zeta_i^{{-}}\prime(0)+\zeta_i^{{+}}\prime(0).
+\end{{equation}}
+If the positive spectra are exactly paired, the determinant bulk cancels and
+only index, anomaly, boundary, or frozen matching residues may remain.  If the
+compact domain spoils this pairing, the v0.1 geometry fails the radiative
+stability route.
+
+\section{{C3.1e Compact-Resolvent Check For The Relative-Orbifold Domain}}
+The remaining assumption in C3.1d can be checked for the explicit C3.1c
+relative-orbifold domain.  For smooth bounded $f$ on $[0,L]$, the partner
+Hamiltonians are the regular Sturm--Liouville operators
+\begin{{align}}
+H_- &= Q_\nu^\dagger Q_\nu
+     =-\partial_x^2+\nu^2 f(x)^2-\nu f'(x),\\
+H_+ &= Q_\nu Q_\nu^\dagger
+     =-\partial_x^2+\nu^2 f(x)^2+\nu f'(x).
+\end{{align}}
+Their domains are the second-order domains induced by
+$Q_\nu:H^1\to L^2$ and $Q_\nu^\dagger:H^1_0\to L^2$.  The plus sector carries
+Dirichlet orbifold conditions.  The minus sector carries the compatible Robin
+conditions obtained by requiring $Q_\nu\psi\in H^1_0$:
+\begin{{equation}}
+(\partial_x+\nu f)\psi\big|_{{0,L}}=0 .
+\end{{equation}}
+These are separated regular boundary conditions on a compact interval.  Standard
+Sturm--Liouville theory therefore gives self-adjoint realizations with compact
+resolvent:
+\begin{{equation}}
+(H_\pm+1)^{{-1}}:L^2([0,L])\to L^2([0,L])
+\quad\hbox{{compact}} .
+\end{{equation}}
+Equivalently, the resolvent maps into $H^2$ with regular boundary conditions,
+and the embedding $H^2([0,L])\hookrightarrow L^2([0,L])$ is compact.
+
+Thus C3.1c supplies an explicit domain for which the compact-resolvent
+assumption in C3.1d is not an extra fitting freedom.  What remains open is the
+parent-selection theorem: the final Tau Core action must still select this
+relative-orbifold domain and its finite algebra without boundary fitting.
+
+\section{{C3.1f Variational Boundary-Selection Lemma}}
+The parent-selection problem can be attacked at the boundary level.  Consider
+the positive quadratic wall-domain action
+\begin{{equation}}
+S_{{\rm dom}}[\psi,\phi]
+=
+\|Q_\nu\psi\|^2+\|Q_\nu^\dagger\phi\|^2
++M_b\left(|\phi(0)|^2+|\phi(L)|^2
++|(Q_\nu\psi)(0)|^2+|(Q_\nu\psi)(L)|^2\right),
+\qquad M_b>0 .
+\end{{equation}}
+The bulk terms are the same-domain Hessian terms.  The boundary term is an
+orbifold fixed-point obstruction: it penalizes leakage of the plus-sector field
+and leakage of $Q_\nu\psi$ at the fixed points.  Since every term is
+non-negative, the protected zero-obstruction sector must satisfy
+\begin{{equation}}
+\phi(0)=\phi(L)=0,
+\qquad
+(Q_\nu\psi)(0)=(Q_\nu\psi)(L)=0 .
+\end{{equation}}
+Thus
+\begin{{equation}}
+\phi\in H^1_0([0,L]),
+\qquad
+(\partial_x+\nu f)\psi\big|_{{0,L}}=0 ,
+\end{{equation}}
+which are exactly the Dirichlet/Robin boundary data used by the
+relative-orbifold pair.  In that sector the integration-by-parts boundary form
+vanishes,
+\begin{{equation}}
+\left[\psi^*\phi\right]_0^L=0,
+\end{{equation}}
+and the induced second-order domains preserve
+$Q_\nu:{{\cal D}}(H_-)\to{{\cal D}}(H_+)$ and
+$Q_\nu^\dagger:{{\cal D}}(H_+)\to{{\cal D}}(H_-)$.
+
+This proves a conditional selection lemma: a positive orbifold boundary
+obstruction in the parent wall action selects the same relative-orbifold
+domain used in C3.1c--C3.1e.  It is not yet the final microscopic proof,
+because the final parent theory must still derive the existence, coefficient,
+and universality of $S_{{\rm dom}}$ rather than inserting it by hand.
+
+\section{{C3.1g Thin-Barrier Origin Of The Boundary Obstruction}}
+The previous lemma becomes less ad hoc if the boundary obstruction is obtained
+as a thin-barrier limit of a bulk-localized parent penalty.  Let $\rho_\epsilon$
+be a non-negative approximate delta function supported near the two orbifold
+fixed points:
+\begin{{equation}}
+\rho_\epsilon(x)
+=\rho_\epsilon^{{(0)}}(x)+\rho_\epsilon^{{(L)}}(x),
+\qquad
+\rho_\epsilon\rightharpoonup \delta_0+\delta_L .
+\end{{equation}}
+Consider the localized leakage penalty
+\begin{{equation}}
+S_{{\mathrm{{leak}},\epsilon}}
+=M_b\int_0^L\rho_\epsilon(x)
+\left(|\phi(x)|^2+|Q_\nu\psi(x)|^2\right)dx .
+\end{{equation}}
+For fields with continuous representatives at the endpoints, the distributional
+limit is
+\begin{{equation}}
+\lim_{{\epsilon\to0}}S_{{\mathrm{{leak}},\epsilon}}
+=M_b\left(|\phi(0)|^2+|\phi(L)|^2
++|(Q_\nu\psi)(0)|^2+|(Q_\nu\psi)(L)|^2\right).
+\end{{equation}}
+Thus the C3.1f boundary action is the sharp-orbifold limit of a positive
+localized leakage energy.  The zero-leakage protected sector is again
+\begin{{equation}}
+\phi|_{{0,L}}=0,
+\qquad
+Q_\nu\psi|_{{0,L}}=0 .
+\end{{equation}}
+
+This gives a plausible parent origin for $S_{{\rm dom}}$: it can arise from a
+finite-width orbifold defect that becomes sharp in the compact-cell limit.  The
+remaining proof obligation is now sharper.  The final parent action must derive
+the defect profile $\rho_\epsilon$, its positivity, its universal coupling
+$M_b$, and the absence of competing endpoint terms.  If those are not derived,
+the boundary-selection lemma remains conditional.
+
+\section{{C3.1h Minimal Defect-Measure Selection Lemma}}
+The defect profile itself can be constrained by admissibility.  Let $\mu_b$ be
+the non-negative boundary-localized measure that appears in the leakage term.
+Assume:
+\begin{{enumerate}}
+\item locality on the compact interval;
+\item invariance under the orbifold reflection exchanging the two fixed points;
+\item support only on the fixed-point set of $S^1/\mathbb Z_2$;
+\item no endpoint flavor label, no Higgs/top endpoint data, and no sign-changing
+weight.
+\end{{enumerate}}
+The fixed-point set is the two-point set $\{{0,L\}}$.  A positive measure
+supported on it has the form
+\begin{{equation}}
+\mu_b=a\,\delta_0+b\,\delta_L,\qquad a,b\geq0 .
+\end{{equation}}
+Orbifold exchange symmetry gives $a=b$.  Up to the universal coupling
+$M_b$, the unique normalized admissible measure is therefore
+\begin{{equation}}
+\mu_b=\delta_0+\delta_L .
+\end{{equation}}
+Equivalently, every admissible smooth regulator family must converge weakly to
+that measure:
+\begin{{equation}}
+\rho_\epsilon(x)\,dx\rightharpoonup \delta_0+\delta_L .
+\end{{equation}}
+This proves the measure-level part of the thin-barrier route: once the parent
+structure requires a positive local leakage penalty supported only at orbifold
+fixed points, the endpoint support and equal weights are forced.  What remains
+open is the dynamical origin of the leakage penalty and the value/universality
+of $M_b$.
+
+\section{{C3.1i Coupling-Independence Of The Protected Domain}}
+The coefficient $M_b$ is still a parent-scale quantity, but the protected
+domain selected by the obstruction does not depend on its numerical value as
+long as it is positive and universal.  For the leakage functional
+\begin{{equation}}
+S_b[M_b;u]
+=M_b\int u\,d\mu_b,
+\qquad
+u=|\phi|^2+|Q_\nu\psi|^2,
+\qquad
+M_b>0 ,
+\end{{equation}}
+the zero-obstruction set is
+\begin{{equation}}
+S_b[M_b;u]=0
+\quad\Longleftrightarrow\quad
+u=0\quad \mu_b\hbox{{-almost everywhere}} .
+\end{{equation}}
+Thus every positive value of $M_b$ selects the same protected boundary sector:
+\begin{{equation}}
+\phi|_{{0,L}}=0,
+\qquad
+Q_\nu\psi|_{{0,L}}=0 .
+\end{{equation}}
+Changing $M_b$ changes the gap of boundary-leakage modes, not the protected
+kernel/index domain.  This removes one possible hidden fitting channel: the
+Higgs quartic, top slot, or endpoint data cannot tune the protected domain
+through the magnitude of $M_b$.
+
+The remaining requirement is universality.  If $M_b$ is allowed to depend on
+field species, family, hypercharge, or endpoint observables, the boundary action
+would reintroduce hidden fitting.  The admissible parent route is therefore:
+\begin{{equation}}
+M_b=M_{{\rm orb}}>0
+\end{{equation}}
+as a single orbifold-defect stiffness shared by the wall, cohomology, and
+regulator sectors.  Its numerical value remains an open parent-scale gate, but
+it is no longer a domain-selection parameter.
+
+\section{{C3.1j Action-Origin Lemma For The Leakage Term}}
+The preceding gates can be derived from the v0.2 parent-action scaffold if the
+wall/domain sector contains the universal positive term
+\begin{{equation}}
+S_{{\rm bdry}}=
+\epsilon_\tau M_{{\rm orb}}
+\int_0^L
+\left(|\Phi_+(x)|^2+|Q_\nu\Phi_-(x)|^2\right)
+d\mu_b(x),
+\qquad
+M_{{\rm orb}}>0 .
+\end{{equation}}
+Here $\Phi_+$ is the plus/parity leakage field and $\Phi_-$ is the partner field
+acted on by the same wall operator $Q_\nu$ that defines the Hessian package.
+Using the measure result of C3.1h,
+\begin{{equation}}
+d\mu_b=d\delta_0+d\delta_L,
+\end{{equation}}
+this term becomes exactly
+\begin{{equation}}
+S_{{\rm bdry}}
+=\epsilon_\tau M_{{\rm orb}}
+\left(
+|\Phi_+(0)|^2+|\Phi_+(L)|^2
++|Q_\nu\Phi_-(0)|^2+|Q_\nu\Phi_-(L)|^2
+\right).
+\end{{equation}}
+Variation of a non-negative quadratic action has a zero-obstruction protected
+sector only when each square vanishes.  Hence the action implies
+\begin{{equation}}
+\Phi_+|_{{0,L}}=0,
+\qquad
+Q_\nu\Phi_-|_{{0,L}}=0,
+\end{{equation}}
+which is precisely the relative-orbifold domain-selection condition.
+
+This is the action-level derivation currently available: if the parent action
+contains one universal positive fixed-point leakage term, the Q-compatible
+Dirichlet/Robin domain follows without Higgs/top endpoint tuning.  What is
+still open is one layer deeper: deriving $S_{{\rm bdry}}$ itself from the final
+microscopic compact-cell dynamics, rather than accepting it as the v0.2
+wall-domain term.
+
+\section{{C3.1k Compact-Cell To Boundary Reduction Target}}
+The next microscopic route is to make $S_{{\rm bdry}}$ the thin-layer limit of
+a compact-cell action, not an independent term.  Let $r$ denote a transverse
+cell coordinate normal to the orbifold fixed set, and let the cell action contain
+a positive stiffness term for leakage away from the protected parity sector:
+\begin{{equation}}
+S_{{\rm cell,leak}}[\epsilon]
+=
+\epsilon_\tau
+\int_0^L\int_0^\epsilon
+\left(
+\kappa_\perp^2|\partial_r\Xi_+(x,r)|^2
++m_\perp^2|\Xi_+(x,r)|^2
++m_\perp^2|Q_\nu\Xi_-(x,r)|^2
+\right)
+w_\epsilon(r)\,dr\,dx .
+\end{{equation}}
+Assume the transverse profile is gapped and collapses to the fixed set:
+\begin{{equation}}
+w_\epsilon(r)\,dr\rightharpoonup \delta_{{\rm fixed}},
+\qquad
+\int_0^\epsilon w_\epsilon(r)\,dr=1,
+\qquad
+\kappa_\perp^2,m_\perp^2>0 .
+\end{{equation}}
+Then the effective fixed-set action has the form
+\begin{{equation}}
+S_{{\rm cell,leak}}
+\longrightarrow
+\epsilon_\tau M_{{\rm orb}}
+\int_0^L
+\left(|\Phi_+(x)|^2+|Q_\nu\Phi_-(x)|^2\right)d\mu_b(x),
+\end{{equation}}
+where $M_{{\rm orb}}$ is the transverse gap/stiffness residue.  By C3.1h, the
+admissible fixed-set measure is $d\mu_b=d\delta_0+d\delta_L$, so the limiting
+term is precisely $S_{{\rm bdry}}$.
+
+This is not yet a solved microscopic compact-cell derivation, because the final
+theory must still specify the transverse coordinate, the collapse profile
+$w_\epsilon$, the gapped leakage fields $\Xi_\pm$, and the origin of
+$M_{{\rm orb}}$.  But it identifies the exact theorem to prove:
+\begin{{equation}}
+S_{{\rm cell}}
+\quad\Longrightarrow\quad
+S_{{\rm bdry}}
+\quad\Longrightarrow\quad
+\text{{Q-compatible relative-orbifold domain}} .
+\end{{equation}}
+
+\section{{C3.1l Tubular-Neighborhood Collapse Lemma}}
+The transverse coordinate in C3.1k can be made canonical at the level of a
+compact-cell theorem.  Let $F=\{{0,L\}}$ be the fixed-point set of
+$S^1/\mathbb Z_2$.  In a small tubular neighborhood $U_\epsilon(F)$, the
+distance-to-fixed-set function
+\begin{{equation}}
+r(x)=\operatorname{{dist}}(x,F)
+\end{{equation}}
+is the unique non-negative local coordinate up to smooth reparameterization that
+is invariant under the orbifold reflection.  A localized positive density with
+no endpoint label can therefore depend only on $r$:
+\begin{{equation}}
+\rho_\epsilon(x)=\frac{{1}}{{Z_\epsilon}}\eta\!\left(\frac{{r(x)}}{{\epsilon}}\right),
+\qquad
+\eta\geq0,\qquad
+\int\eta=1 .
+\end{{equation}}
+The coarea/tubular-neighborhood reduction gives, for every continuous test
+function $g$,
+\begin{{equation}}
+\lim_{{\epsilon\to0}}\int_{{U_\epsilon(F)}}g(x)\rho_\epsilon(x)\,dx
+=g(0)+g(L).
+\end{{equation}}
+Equivalently,
+\begin{{equation}}
+\rho_\epsilon(x)\,dx\rightharpoonup \delta_0+\delta_L .
+\end{{equation}}
+
+This derives the collapse profile at measure level from locality,
+orbifold-invariant distance, positivity, and absence of endpoint labels.  The
+remaining microscopic input is no longer the shape of $w_\epsilon$; it is the
+existence of a positive transverse leakage energy whose density is tied to this
+tubular collapse.
+
+\section{{C3.1m Stable-Cell Hessian Origin Of Leakage Energy}}
+The remaining microscopic input can be formulated as a stability theorem.  Let
+$\Psi_0$ be a stationary compact-cell background selected by the parent action
+$S_{{\rm cell}}[\Psi]$, and split small fluctuations into protected and leakage
+components,
+\begin{{equation}}
+\delta\Psi=\delta\Psi_{{\rm prot}}\oplus\delta\Psi_{{\rm leak}} .
+\end{{equation}}
+If $\Psi_0$ is a stable minimum modulo gauge/quotient directions, the second
+variation on the leakage complement is non-negative and gapped:
+\begin{{equation}}
+\delta^2S_{{\rm cell}}[\Psi_0](\delta\Psi_{{\rm leak}},\delta\Psi_{{\rm leak}})
+\geq
+m_\perp^2\|\delta\Psi_{{\rm leak}}\|^2
+\;+\;
+\kappa_\perp^2\|\nabla_\perp\delta\Psi_{{\rm leak}}\|^2,
+\qquad
+m_\perp^2,\kappa_\perp^2>0 .
+\end{{equation}}
+The orbifold quotient identifies leakage away from the protected parity sector
+with the fields $\Xi_+$ and $Q_\nu\Xi_-$ used in C3.1k.  Therefore the quadratic
+Hessian contains the local positive density
+\begin{{equation}}
+\kappa_\perp^2|\partial_r\Xi_+|^2
++m_\perp^2|\Xi_+|^2
++m_\perp^2|Q_\nu\Xi_-|^2 .
+\end{{equation}}
+Combining this Hessian positivity with the tubular collapse of C3.1l gives
+\begin{{equation}}
+S_{{\rm cell}}
+\Rightarrow
+S_{{\rm cell,leak}}
+\Rightarrow
+S_{{\rm bdry}}
+\Rightarrow
+\text{{Q-compatible relative-orbifold domain}} .
+\end{{equation}}
+
+This is the strongest current derivation route.  It reduces the remaining
+microscopic gate to a precise stability requirement: prove the existence of a
+compact-cell stationary background $\Psi_0$ whose Hessian has a protected sector,
+a gapped leakage complement, and the same wall operator $Q_\nu$ on the quotient.
+If the Hessian has a leakage zero mode, negative mode, or a different operator
+than $Q_\nu$, the compact spectral theorem route fails.
+
+\section{{C3.1n Explicit Toy Compact-Cell Background And Hessian}}
+An explicit solvable compact-cell model can now be written down.  Let the
+background be a two-component wall field
+\begin{{equation}}
+\Psi_0(x)=f_0(x)T_Y,\qquad f_0(x)=\tanh x
+\end{{equation}}
+in the local wall chart of the compact cell, with the unoriented identification
+$T_Y\sim -T_Y$.  Take the parent cell energy in the wall sector to contain
+\begin{{equation}}
+S_{{\rm wall}}[f]
+=\int\left[\frac12(f')^2+\frac12(1-f^2)^2\right]dx .
+\end{{equation}}
+The Euler--Lagrange equation is
+\begin{{equation}}
+-f''-2f(1-f^2)=0,
+\end{{equation}}
+and $f_0(x)=\tanh x$ solves it.  The second variation around $f_0$ gives the
+wall Hessian
+\begin{{equation}}
+L_{{\rm wall}}
+=-\partial_x^2+6\tanh^2x-2
+=-\partial_x^2+4-6\,{{\rm sech}}^2x .
+\end{{equation}}
+Its translation zero mode is
+\begin{{equation}}
+f_0'(x)={{\rm sech}}^2x,
+\end{{equation}}
+which is quotient/collective-coordinate data rather than leakage.  Orthogonal
+to this protected direction, the standard kink Hessian has positive spectrum:
+one positive bound mode and continuum beginning at $4$ in the infinite-line
+local chart.
+
+The leakage complement is modeled by the positive Hessian block
+\begin{{equation}}
+L_{{\rm leak}}
+=-\kappa_\perp^2\partial_r^2+m_\perp^2+Q_\nu^\dagger Q_\nu,
+\qquad
+m_\perp^2,\kappa_\perp^2>0 .
+\end{{equation}}
+Since $Q_\nu^\dagger Q_\nu\geq0$, the leakage spectrum obeys
+\begin{{equation}}
+{{\rm Spec}}(L_{{\rm leak}})\subseteq[m_\perp^2,\infty).
+\end{{equation}}
+Thus this toy compact-cell background has exactly the desired qualitative
+Hessian structure: a protected collective/quotient sector, a gapped leakage
+complement, and the same $Q_\nu$ operator entering the leakage block.
+
+This is still not the final microscopic Tau Core proof.  It is an explicit
+existence model for the Hessian pattern required by C3.1m.  The decisive next
+step is to derive this kink wall sector, leakage block, and $Q_\nu$ coupling
+from the final compact-cell action rather than selecting this solvable model.
+
+\section{{C3.2 What The v0.1 Geometry Would Force}}
+The v0.1 package would upgrade the paper only if the following implications
+are proven from one domain:
+\begin{{enumerate}}
+\item the determinant-one unitary sector of the finite algebra gives
+$S(U(3)\times U(2))$;
+\item the traceless block-scalar centralizer is the unique Abelian line and is
+identified with $T_Y$ after canonical normalization;
+\item the orbifold/sign quotient promotes $T_Y$ to the unoriented projector
+line $P_Y$;
+\item the lowest finite-tension wall in that line is the Bogomolny kink
+$f(x)=\tanh x$ in the local-wall limit;
+\item the induced wall operator is $Q_i=\partial_x+\kappa_\tau^2Y_if(x)$;
+\item the zero-mode index gives the localization exponent
+$\nu_i=\kappa_\tau^2|Y_i|$;
+\item the same compact domain supplies the zeta/heat-kernel regulator and
+positive-spectrum pairing needed by the determinant gate.
+\end{{enumerate}}
+Items 1--3 are close to finite-dimensional algebra once the algebra is
+declared.  Items 4--7 are the genuine theorem-level work.  This is why the
+v0.1 geometry is important but not yet a completed Higgs derivation.
+
 \section{{Adversarial Audit Of C3}}
 C3 exposes rather than hides the remaining inputs.  The attack points are:
 \begin{{itemize}}
@@ -2329,6 +3760,77 @@ be selected only if it drives all of them to zero without tuned weights:
 \end{{itemize}}
 C4 is not yet minimized in this ledger.  It is a precise target: prove that C3
 is a protected extremum, or find a simpler compact geometry that beats it.
+
+\section{{C4.1 Parent-Selection Lower-Bound Lemma Candidate}}
+C4 can be sharpened into a lower-bound problem.  Let admissible compact
+wall-cell candidates $X$ be scored by
+\begin{{equation}}
+{{\cal S}}_{{\rm sel}}[X]=
+I_{{\rm compact}}[X]+I_{{\rm gap}}[X]+I_{{\rm cohom}}[X]+I_{{\rm anom}}[X]
++I_{{\rm wall}}[X]+I_{{\rm reg}}[X],
+\qquad I_a[X]\geq 0 .
+\end{{equation}}
+The target theorem is not that C3 is attractive, but that every admissible
+competitor obeys the alternative
+\begin{{equation}}
+X\not\simeq X_{{\rm C3}}
+\quad\Longrightarrow\quad
+{{\cal S}}_{{\rm sel}}[X]>0
+\end{{equation}}
+unless $X$ is a unitary relabeling, orientation reversal, or Q-exact
+representative of the same compact domain.
+
+This splits the proof into falsifiable sublemmas:
+\begin{{enumerate}}
+\item If $I_{{\rm compact}}=I_{{\rm reg}}=0$, the wall operator must be a closed
+Fredholm $Q$ on a compact domain with Q-paired positive spectrum.
+\item If $I_{{\rm wall}}=0$, the lowest finite-tension two-vacuum wall is in the
+Bogomolny class, giving a kink profile in the local-wall limit.
+\item If $I_{{\rm cohom}}=I_{{\rm gap}}=0$, only two protected visible roles are
+allowed: one primitive closure role and one primitive pairing role.
+\item If $I_{{\rm anom}}=0$, the bridge between those roles must be anomaly-safe
+under the determinant-one visible unitary sector.
+\end{{enumerate}}
+Together these would force the same structure that C3 currently assumes:
+\begin{{equation}}
+S^1/\mathbb Z_2,\qquad
+\mathbb C^3\oplus\mathbb C^2,\qquad
+S(U(3)\times U(2)),\qquad
+Q_i=\partial_x+\kappa_\tau^2Y_if(x).
+\end{{equation}}
+This is still a theorem candidate, but it changes the open gate from ``choose
+C3'' to ``prove a lower bound excluding all lower-complexity competitors.''  A
+single explicit competitor with ${{\cal S}}_{{\rm sel}}=0$ and different
+protected content would falsify the C4 route.
+
+\section{{C4.2 No-Free-Weights Selection Rule}}
+The C4 functional must not become a hidden fitting device.  Therefore the
+selection rule is lexicographic rather than tunably weighted:
+\begin{{equation}}
+X_1\prec X_2
+\quad\hbox{{iff}}\quad
+\big(I_{{\rm compact}},I_{{\rm reg}},I_{{\rm cohom}},I_{{\rm gap}},
+I_{{\rm anom}},I_{{\rm wall}}\big)[X_1]
+<
+\big(I_{{\rm compact}},I_{{\rm reg}},I_{{\rm cohom}},I_{{\rm gap}},
+I_{{\rm anom}},I_{{\rm wall}}\big)[X_2]
+\end{{equation}}
+in the first gate where the two tuples differ, with each gate normalized only by
+its own binary or integer obstruction count.  No continuous coefficient may be
+chosen after seeing Higgs, top, or quartic data.
+
+This turns the parent-selection problem into a strict audit:
+\begin{{itemize}}
+\item first require compactness and same-domain regulator closure;
+\item then require the primitive cohomology/gap split;
+\item then require anomaly-compatible bridge structure;
+\item only after these discrete gates pass may wall-energy minimality be used
+to choose among survivors.
+\end{{itemize}}
+The relative-orbifold C3 package is therefore not selected by numerical tuning.
+It remains viable only if it is the first survivor of this frozen obstruction
+ordering.  This rule is also a falsifier: any lower-complexity competitor with a
+lexicographically smaller obstruction tuple defeats the present C3 route.
 
 \section{{C5 Local Spectrum Gate}}
 The local-wall spectrum is now explicit.  For
@@ -2437,6 +3939,29 @@ theorem-level replacement must solve the compact $S^1/\mathbb Z_2$ boundary
 problem with Q-paired self-adjoint domains and then define the zeta determinant
 from that same spectrum.
 
+\section{{C9.1 Q-Paired Spectrum Toy Demonstrator}}
+The packet also contains a sharper same-domain toy check:
+\texttt{{paper4\_q\_paired\_spectrum\_demo\_v01.csv}}.  Here the finite
+operator $Q$ is built first, and the partner Hamiltonians are defined by
+\begin{{equation}}
+H_-=Q^\dagger Q,\qquad H_+=QQ^\dagger .
+\end{{equation}}
+This changes the logic.  The nonzero spectra of $Q^\dagger Q$ and $QQ^\dagger$
+are identical by singular-value decomposition:
+\begin{{equation}}
+Qv_n=s_nu_n
+\quad\Longrightarrow\quad
+Q^\dagger Qv_n=s_n^2v_n,\qquad
+QQ^\dagger u_n=s_n^2u_n .
+\end{{equation}}
+The generated CSV records an index residue and a maximum positive-mode pairing
+residual at numerical precision.  This is still not the physical compact
+orbifold theorem, because the real domain must be the self-adjoint
+$S^1/\mathbb Z_2$ wall domain selected by the parent action.  But it shows the
+right proof mechanism: define $Q$ and its domain first, then the dangerous
+positive-spectrum determinant cancels structurally, leaving only kernel,
+index, anomaly, boundary, or frozen matching residues.
+
 \section{{C10 Uniqueness Proof-Obligation Split}}
 C10 separates the uniqueness problem into layers:
 \begin{{enumerate}}
@@ -2507,6 +4032,69 @@ parent differential, the adjoint, the compact domain, or the index.  The next
 real theorem must replace this toy complex with a parent-selected complex from
 the compact tau-cell action.
 
+\section{{C14.1 Anomaly-Bridge Closure Gate}}
+The anomaly gate can also be made sharper without claiming a Standard Model
+derivation.  Let ${{\cal R}}_{{\rm vis}}$ be the protected light representation
+content induced by the compact cell and let $T_A$ denote generators of the
+visible determinant-one unitary sector.  The admissible bridge must satisfy the
+domain-native trace cancellations
+\begin{{equation}}
+{{\cal A}}_{{ABC}}
+=\operatorname{{Tr}}_{{{{\cal R}}_{{\rm vis}}}}
+\!\left(T_A(T_BT_C+T_CT_B)\right)=0,
+\qquad
+{{\cal A}}_A^{{\rm grav}}
+=\operatorname{{Tr}}_{{{{\cal R}}_{{\rm vis}}}}(T_A)=0,
+\end{{equation}}
+together with the mixed block condition
+\begin{{equation}}
+{{\cal A}}_{{3|2}}
+=\operatorname{{Tr}}_{{{{\cal R}}_{{\rm bridge}}}}
+\!\left(T_3^2T_2+T_2^2T_3\right)=0 .
+\end{{equation}}
+The point is not the detailed Standard Model spectrum.  The point is that the
+same parent-selected bridge that couples the closure and pairing roles must also
+be anomaly-neutral in the compact-domain trace.  If the $3\times2$ bridge is
+removed, the two protected roles become cohomologically disconnected.  If an
+extra unpaired light doublet or singlet is added, at least one trace obstruction
+must be canceled by an additional parent-derived partner or the candidate fails.
+
+Thus the bridge is not an optional phenomenological decoration.  It is a
+combined cohomology/anomaly gate:
+\begin{{equation}}
+I_{{\rm anom}}=0
+\quad\Longrightarrow\quad
+\text{{bridge-closed, trace-neutral, Q-compatible visible content}} .
+\end{{equation}}
+This still does not prove anomaly freedom.  It states the exact object that the
+final parent action must compute: a compact-domain representation complex whose
+protected trace anomalies vanish without adding endpoint-tuned spectator fields.
+
+\section{{C14.2 Bridge-Trace Normalization Gate}}
+The same bridge gate also constrains the normalization used by the parent
+Yukawa product.  If the protected bridge is exactly one bifundamental channel
+between the closure block and the pairing block, its multiplicity is not fitted:
+\begin{{equation}}
+\dim(V_{{\rm cl}}\otimes V_{{\rm pair}}^*)=3\times2=6 .
+\end{{equation}}
+With the compact-cell normalization already fixing
+$\kappa_\tau^2=3/5$, the bridge trace gives
+\begin{{equation}}
+g_t^{{\rm bridge}}
+=\operatorname{{Tr}}_{{V_{{\rm cl}}\otimes V_{{\rm pair}}^*}}
+(\kappa_\tau^2 I)
+=6\kappa_\tau^2=\frac{{18}}{{5}} .
+\end{{equation}}
+This is the narrow sense in which the $g_t$ factor is constrained.  It is not a
+physical top Yukawa derivation unless the parent action also derives the unique
+bridge channel, the family selection, the running/matching factor, and the
+physical electroweak scale.  The falsifier is direct: if the anomaly-safe
+parent complex requires a different bridge multiplicity or additional light
+spectator channels, the fixed $18/5$ bridge normalization no longer follows.
+The packet file \texttt{{paper4\_anomaly\_bridge\_audit\_v01.csv}} records this
+as a frozen obstruction table: target bridge, removed bridge, extra unpaired
+light doublet, and altered bridge multiplicity.
+
 \section{{C15 Operator-Domain Ansatz}}
 The toy complex must become a closed operator problem.  For each branch
 $a={{\rm cl}}$ or $a={{\rm pair}}$, the target data are
@@ -2532,6 +4120,196 @@ This prevents a false closure in which the zero mode, index, and determinant
 are each computed with a different boundary condition.  C16 is a compatibility
 gate; the actual domain classification remains open.
 
+\section{{C16.1 Anomaly-Compatible Domain Closure Criterion}}
+The anomaly/Ward gate can be made domain-native.  Let $\mathcal D_{{\rm rel}}$ be
+the Q-compatible relative-orbifold domain selected above.  A gauge, BRST, or
+cohomology generator $G_A$ is admissible only if
+\begin{{equation}}
+G_A\mathcal D_{{\rm rel}}\subseteq\mathcal D_{{\rm rel}},
+\qquad
+[G_A,Q_\nu]\mathcal D_{{\rm rel}}\subseteq L^2([0,L]),
+\end{{equation}}
+and if its regulated trace is computed with the same compact spectrum:
+\begin{{equation}}
+{{\cal A}}_{{ABC}}
+=
+\lim_{{\Lambda\to\infty}}
+\operatorname{{Tr}}_{{\mathcal D_{{\rm rel}}}}
+\!\left[
+T_A(T_BT_C+T_CT_B)\,
+\chi(D_\tau^2/\Lambda^2)
+\right].
+\end{{equation}}
+Thus anomaly cancellation is not an abstract representation statement detached
+from the wall problem.  It must be a trace statement on the same domain that
+defines $Q_\nu$, the index, and the determinant.
+
+This gives the closure criterion:
+\begin{{equation}}
+I_{{\rm anom}}=0
+\quad\Longleftrightarrow\quad
+\begin{{cases}}
+G_A\mathcal D_{{\rm rel}}\subseteq\mathcal D_{{\rm rel}},\\
+{{\cal A}}_{{ABC}}=0,\\
+{{\cal A}}_A^{{\rm grav}}=0,\\
+\hbox{{no added endpoint spectator fields.}}
+\end{{cases}}
+\end{{equation}}
+If a would-be anomaly cancellation requires changing the boundary condition,
+adding a branch-specific regulator, or adding endpoint spectator modes, it is
+not compatible with the compact spectral theorem.  This is still a criterion,
+not a completed anomaly calculation; the parent action must still derive the
+representation complex whose generators satisfy it.
+
+\section{{C16.3 UV/Continuum Admissibility Criterion}}
+The compact spectral mechanism can be promoted toward QFT only if it admits a
+controlled continuum family.  Let $\epsilon>0$ denote a compact-cell cutoff,
+defect thickness, lattice spacing, or spectral truncation scale, and let
+\[
+({{\cal H}}_\epsilon,Q_\epsilon,D_\epsilon,\chi_\epsilon,\mathcal D_\epsilon)
+\]
+be the corresponding regulated data.  The continuum gate requires:
+\begin{{enumerate}}
+\item $Q_\epsilon$ converges to a closed Fredholm $Q$ in graph norm or
+strong-resolvent sense;
+\item the domains $\mathcal D_\epsilon$ converge to the same relative-orbifold
+domain used by the index and determinant gates;
+\item the index is stable, $\operatorname{{ind}}(Q_\epsilon)=\operatorname{{ind}}(Q)$,
+for sufficiently small $\epsilon$;
+\item the positive-spectrum determinant residue is regulator independent after
+C18--C20 pairing;
+\item the low-energy projected action has local kinetic terms, finite
+renormalized couplings, and the same Ward/anomaly constraints as C16.1--C16.2.
+\end{{enumerate}}
+This is a UV/continuum admissibility criterion, not a microscopic completion.
+It changes the open problem from ``invent a UV theory'' to a sharper test:
+construct a regulator family whose limit preserves the compact index,
+same-domain determinant cancellation, and anomaly/Ward identities.
+
+\section{{C16.3a Microscopic Continuum Completion Target}}
+The continuum blocker can be narrowed further by specifying the kind of
+microscopic family that would close it.  A candidate completion is a sequence
+of compact-cell actions
+\begin{{equation}}
+S_\epsilon[\Psi]
+=
+\int_{{K_\tau^\epsilon}}
+\left(
+\langle D_\epsilon\Psi,D_\epsilon\Psi\rangle
+ +V_\epsilon(\Psi)
+ +B_\epsilon(\Psi|\partial K_\tau^\epsilon)
+\right)d\mu_\epsilon ,
+\end{{equation}}
+with stationary backgrounds $\Psi_0^\epsilon$ satisfying
+\begin{{equation}}
+\delta S_\epsilon[\Psi_0^\epsilon]=0,
+\qquad
+\delta^2S_\epsilon[\Psi_0^\epsilon]
+\longrightarrow
+H_\tau
+\end{{equation}}
+in strong-resolvent or graph-norm sense.  The completion gate is passed only if
+the Hessian limit produces the same $Q_\nu$ domain, the same index residue, the
+same trace-cancellation complex, and the same determinant residue class:
+\begin{{equation}}
+(S_\epsilon,\Psi_0^\epsilon)
+\longrightarrow
+({{\cal D}}_{{\rm rel}},Q_\nu,\operatorname{{ind}}Q_\nu,
+{{\cal R}}_{{\rm vis}},R_t^{{\rm fin}}).
+\end{{equation}}
+This forbids a continuum story in which the wall, anomaly cancellation,
+regulator, and determinant are imported from separate effective models.  The
+paper has not supplied such a microscopic family, but the target is now
+mathematically explicit.
+
+\section{{C16.2 Same-Domain Ward Identity Gate}}
+C16.1 constrains the anomaly trace.  The next closure condition is a Ward
+identity on the same regulated compact domain.  Let $J_A$ be the current
+generated by an admissible $G_A$, and let $S_{{\rm eff}}^\Lambda$ denote the
+finite-cutoff effective action obtained from the same operator family
+$D_\tau^2$ used in the determinant gate.  The required identity is
+\begin{{equation}}
+\delta_A S_{{\rm eff}}^\Lambda
+=
+\left\langle\nabla_\mu J_A^\mu\right\rangle_\Lambda
+=
+{{\cal A}}_A^\Lambda
++{{\cal B}}_A^\Lambda ,
+\end{{equation}}
+where ${{\cal A}}_A^\Lambda$ is the heat-kernel anomaly term and
+${{\cal B}}_A^\Lambda$ is a possible boundary/domain variation.  The domain
+gate demands
+\begin{{equation}}
+\lim_{{\Lambda\to\infty}}{{\cal A}}_A^\Lambda=0,
+\qquad
+\lim_{{\Lambda\to\infty}}{{\cal B}}_A^\Lambda=0,
+\end{{equation}}
+without changing $\mathcal D_{{\rm rel}}$ and without adding endpoint
+counterterms that are absent from the parent action.
+
+Equivalently, the admissible regulator must commute with the protected
+positive-mode pairing up to trace-class terms:
+\begin{{equation}}
+\left[\,\chi(D_\tau^2/\Lambda^2),Q_\nu\,\right]
+={{\cal O}}_{{\rm tr}}(\Lambda^{{-1}}),
+\qquad
+\lim_{{\Lambda\to\infty}}
+\operatorname{{Tr}}_{{\mathcal D_{{\rm rel}}}}
+\!\left([G_A,Q_\nu]\chi(D_\tau^2/\Lambda^2)\right)=0 .
+\end{{equation}}
+If this fails, the determinant cancellation may be a formal pairing artifact
+rather than a regulator-safe QFT statement.  This gives a conditional
+same-domain anomaly/Ward closure criterion: the trace and Ward terms must
+vanish on the same compact domain used by $Q_\nu$, the index, and the
+determinant.
+
+\section{{C16.4 Representation Trace-Cancellation Gate}}
+The remaining anomaly problem can now be stated as a finite trace-cancellation
+problem rather than as an informal representation hope.  A parent-derived
+visible complex must provide a finite set of compact-domain modules
+\begin{{equation}}
+{{\cal R}}_{{\rm vis}}
+=
+\left\lbrace
+({{\cal H}}_a,\chi_a,T_A^a,\mathcal D_a,\sigma_a)
+\right\rbrace_a ,
+\end{{equation}}
+where $\chi_a$ is chirality or orientation, $\sigma_a=\pm1$ is the determinant
+sign, and every $\mathcal D_a$ is induced from the same compact-cell domain.
+The admissible trace-cancellation condition is
+\begin{{equation}}
+{{\cal T}}_{{ABC}}^{{\rm parent}}
+=
+\sum_a
+\sigma_a\,
+\operatorname{{Tr}}_a
+\!\left[
+\chi_a T_A^a(T_B^aT_C^a+T_C^aT_B^a)
+\right]
+=0,
+\end{{equation}}
+together with the gravitational and mixed trace conditions
+\begin{{equation}}
+\sum_a\sigma_a\operatorname{{Tr}}_a(\chi_aT_A^a)=0,
+\qquad
+\sum_a\sigma_a\operatorname{{Tr}}_a(\chi_a)=0 .
+\end{{equation}}
+The crucial restriction is that ${{\cal R}}_{{\rm vis}}$ may not be chosen after
+the anomaly is known.  It must be the image of the same parent selection that
+produces the $3+2$ carrier, the hypercharge line, and the wall domain:
+\begin{{equation}}
+S_{{\rm parent}}
+\longrightarrow
+({{\cal F}},L_Y,\mathcal D_{{\rm rel}},{{\cal R}}_{{\rm vis}}).
+\end{{equation}}
+If extra spectator modules are inserted solely to cancel
+${{\cal T}}_{{ABC}}^{{\rm parent}}$, the closure fails.  This section therefore
+turns the old open phrase ``derive the representation trace cancellation''
+into a concrete gate: compute ${{\cal R}}_{{\rm vis}}$ from the parent compact
+cell and verify the three traces above on the same domain.  The trace equations
+are now fixed, but the parent-derived representation complex is not yet
+computed.
+
 \section{{C17 Self-Adjoint Domain Candidate}}
 The first candidate replacement for the C9 Dirichlet pilot is an orbifold
 parity domain that preserves Q-pairing:
@@ -2539,9 +4317,61 @@ parity domain that preserves Q-pairing:
 Q_\nu:{{\cal D}}_-\to{{\cal D}}_+,\qquad
 Q_\nu^\dagger:{{\cal D}}_+\to{{\cal D}}_- .
 \end{{equation}}
-It must make $H_\pm$ self-adjoint, preserve positive-mode pairing, keep
-zero-mode/index residue explicit, and feed the same spectrum to the zeta
-determinant.  This is a domain candidate, not a classification theorem.
+In the relative-orbifold candidate the domains are made explicit as
+\begin{{align}}
+{{\cal D}}_-
+&=\left\lbrace\psi\in H^1([0,L])\;:\;\psi(0)=\psi(L)=0\right\rbrace,\\
+{{\cal D}}_+
+&=\left\lbrace\phi\in H^1([0,L])\;:\;(Q_\nu^\dagger\phi)(0)
+=(Q_\nu^\dagger\phi)(L)=0\right\rbrace.
+\end{{align}}
+The second-order domains are then not chosen independently:
+\begin{{align}}
+{{\cal D}}(H_-)&=\left\lbrace\psi\in{{\cal D}}_-:Q_\nu\psi\in{{\cal D}}_+\right\rbrace,\\
+{{\cal D}}(H_+)&=\left\lbrace\phi\in{{\cal D}}_+:Q_\nu^\dagger\phi\in{{\cal D}}_-\right\rbrace.
+\end{{align}}
+This is the important restriction.  The boundary condition of $H_\pm$ is
+inherited from the first-order closed operator pair rather than fitted at the
+second-order level.  It must make $H_\pm$ self-adjoint, preserve positive-mode
+pairing, keep zero-mode/index residue explicit, and feed the same spectrum to
+the zeta determinant.  This is a domain candidate, not a classification
+theorem.
+
+\section{{C17.1 Parent-Domain Selection Functional}}
+The remaining parent-domain question can be sharpened into a selection
+functional on admissible self-adjoint extensions.  Let $\mathfrak D_Q$ be the
+class of compact domains for which $Q_\nu$ is closed and $H_\pm$ are
+self-adjoint.  Define the lexicographic obstruction vector
+\begin{{equation}}
+{{\cal S}}_{{\rm dom}}({{\cal D}})
+=
+\big(
+I_Q({{\cal D}}),\ I_{{\rm ind}}({{\cal D}}),\
+I_{{\rm pair}}({{\cal D}}),\ I_{{\rm bdry}}({{\cal D}}),\
+I_{{\rm anom}}({{\cal D}}),\ I_{{\rm free}}({{\cal D}})
+\big),
+\end{{equation}}
+where the entries penalize, respectively: failure of $Q$-closure, wrong index,
+unpaired positive spectrum, unmatched boundary residue, anomaly/Ward-domain
+failure, and any continuous endpoint parameter not fixed by the parent action.
+The parent-domain selection rule is
+\begin{{equation}}
+{{\cal D}}_{{\rm parent}}
+=
+\operatorname*{{arg\,min}}_{{{{\cal D}}\in\mathfrak D_Q}}
+{{\cal S}}_{{\rm dom}}({{\cal D}})
+\quad\hbox{{lexicographically}} .
+\end{{equation}}
+The relative-orbifold domain is selected if it is the unique zero-obstruction
+minimum:
+\begin{{equation}}
+{{\cal S}}_{{\rm dom}}({{\cal D}}_{{\rm rel}})=(0,0,0,0,0,0)
+\end{{equation}}
+and every competitor either changes the index, breaks $Q$-pairing, introduces
+an endpoint parameter, or fails the anomaly/Ward domain criterion.  This closes
+the domain-selection problem at criterion level, not at exhaustive
+classification level: a lower-complexity zero-obstruction competitor would
+still falsify the claimed parent selection.
 
 \section{{C18 Paired-Spectrum Verification Target}}
 The required theorem is the positive-mode bijection
@@ -2555,17 +4385,50 @@ unpaired:
 \begin{{equation}}
 {{\rm ind}}(Q_\nu)=\dim\ker Q_\nu-\dim\ker Q_\nu^\dagger .
 \end{{equation}}
-This is a theorem target, not yet a verified result on the C17 compact domain.
+The proof obligation is now narrow.  If $Q_\nu$ is closed Fredholm on the C17
+domain and $H_-=Q_\nu^\dagger Q_\nu$, $H_+=Q_\nu Q_\nu^\dagger$ are
+self-adjoint with compact resolvent, then for every $\lambda>0$:
+\begin{{equation}}
+Q_\nu:\ker(H_- -\lambda)\longrightarrow\ker(H_+-\lambda)
+\end{{equation}}
+is injective because $Q_\nu\psi=0$ would imply
+$\lambda\|\psi\|^2=\|Q_\nu\psi\|^2=0$, and it is surjective by the inverse map
+$\lambda^{-1/2}Q_\nu^\dagger$.  Thus the positive spectra match including
+multiplicity:
+\begin{{equation}}
+{{\rm Spec}}_+(H_-)= {{\rm Spec}}_+(H_+).
+\end{{equation}}
+This proves the abstract pairing lemma conditional on the C17 domain being the
+actual compact self-adjoint domain selected by the parent action.  What remains
+open is not the algebraic pairing step; it is the domain-selection theorem and
+the anomaly/Ward-compatible regulator.
 
-\section{{C19 Zeta-Determinant Cancellation Target}}
+\section{{C19 Conditional Zeta-Determinant Cancellation Lemma}}
 If C18 holds on the same compact domain, then the positive-mode determinant
 ratio should cancel:
 \begin{{equation}}
 \log\frac{{\det_\zeta H_-^{{\rm pos}}}}{{\det_\zeta H_+^{{\rm pos}}}}
 =-\zeta_{{-,{{\rm pos}}}}'(0)+\zeta_{{+,{{\rm pos}}}}'(0)=0.
 \end{{equation}}
+The determinant lemma is then immediate at the formal zeta level.  Define
+\begin{{equation}}
+\zeta_\pm^{{\rm pos}}(s)=\sum_{{\lambda\in{{\rm Spec}}_+(H_\pm)}}
+m_\pm(\lambda)\lambda^{{-s}}.
+\end{{equation}}
+If C18 gives $m_-(\lambda)=m_+(\lambda)$ for all positive eigenvalues and the
+same analytic continuation/regulator is used, then
+\begin{{equation}}
+\zeta_-^{{\rm pos}}(s)=\zeta_+^{{\rm pos}}(s)
+\quad\Longrightarrow\quad
+\det_\zeta H_-^{{\rm pos}}=\det_\zeta H_+^{{\rm pos}} .
+\end{{equation}}
 Any remaining contribution must be explicit kernel/index/anomaly/boundary or
-matching residue.  This is a determinant target, not yet a proof.
+matching residue.  This establishes the positive-spectrum determinant
+cancellation proposition inside the same-domain setup.  The remaining open
+determinant problem is physical rather than algebraic: compute the
+top-sensitive same-domain finite residue, prove Ward/regulator compatibility,
+and match the result to the low-energy Higgs sector without inserting a
+counterterm.
 
 \section{{C20 Residue Classification Gate}}
 After positive-mode cancellation, allowed residues are only those fixed by the
@@ -2574,6 +4437,39 @@ matching terms.  Forbidden residues include endpoint-tuned scalar counterterms,
 branch-specific regulators, unmatched boundary constants, or arbitrary finite
 terms inserted to restore naturalness.  Thus cancellation is not enough; the
 remaining finite residue must also be admissible.
+
+\section{{C20.1 Regulator-Independence Residue Test}}
+The residue classification becomes testable by comparing two admissible
+cutoff functions.  Let $\chi_1$ and $\chi_2$ be smooth compact-domain
+regulators with $\chi_i(0)=1$ and rapid decay.  The positive-mode determinant
+difference is admissible only if
+\begin{{equation}}
+\Delta_{{12}}^{{\rm pos}}
+=
+\operatorname{{Tr}}_{{\mathcal D_{{\rm rel}}}}
+\!\left[
+(\chi_1-\chi_2)(D_\tau^2/\Lambda^2)
+\left(\Pi_-^{{\rm pos}}-\Pi_+^{{\rm pos}}\right)
+\right]
+\xrightarrow[\Lambda\to\infty]{{}}0 .
+\end{{equation}}
+Here $\Pi_\pm^{{\rm pos}}$ are the positive-spectrum projectors of $H_\pm$ on
+the same domain.  If C18 holds exactly, $\Pi_-^{{\rm pos}}$ and
+$\Pi_+^{{\rm pos}}$ are matched by $Q_\nu$, and no bulk positive-mode residue
+may depend on $\chi_i$.
+
+The allowed finite ambiguity is therefore restricted to
+\begin{{equation}}
+\Delta_{{12}}
+\in
+\operatorname{{span}}\left\lbrace
+{{\rm index,\ anomaly,\ boundary,\ frozen\ matching}}
+\right\rbrace .
+\end{{equation}}
+Any regulator-dependent scalar mass term outside this span is a failure mode.
+This is the practical audit version of C20: change the admissible cutoff, and
+the Higgs-lightness conclusion must not move except through the explicitly
+listed residues.
 
 \section{{$\epsilon_\tau$ Origin Gate}}
 The last absolute scale is $\epsilon_\tau$.  Admissible origins include:
@@ -2633,6 +4529,164 @@ positive-spectrum determinant can cancel structurally.  Zero modes and index
 residue must remain explicit.  The gate is not solved until the physical
 $Q_t$, determinant signs, regulator, and Yukawa strength are parent-derived.
 
+\section{{Top Determinant No-Mass-Rescue Gate}}
+The decisive radiative-stability test is not whether a formal determinant can
+be written.  It is whether the top-sensitive determinant avoids producing an
+unprotected scalar mass term.  Let $H$ denote the visible Higgs zero-mode
+coordinate and let $\delta$ denote the top/flavor mismatch or bridge spurion.
+The one-loop effective contribution must have the constrained expansion
+\begin{{equation}}
+\Gamma_t[H,\delta]
+=
+c_0+c_2^{{\rm prot}}|H|^4
++\delta\,{{\cal O}}_{{\rm bridge}}[H]
++{{\cal O}}(\delta^2),
+\end{{equation}}
+with the forbidden terms
+\begin{{equation}}
+\Delta\Gamma_t^{{\rm forbidden}}
+=
+M_\tau^2 |H|^2
++M_\tau\,\delta\,|H|^2
++c_{{\rm free}}\Lambda^2|H|^2 .
+\end{{equation}}
+Each forbidden term must be either absent, $Q$-exact, quotient-null, or paired
+away by the same-domain determinant:
+\begin{{equation}}
+\Pi_{{\rm phys}}\Delta\Gamma_t^{{\rm forbidden}}=0 .
+\end{{equation}}
+This is the no-mass-rescue gate.  A successful top determinant may generate a
+controlled quartic/matching residue or a parent-derived Yukawa coefficient, but
+it may not hide the hierarchy problem in a mismatch-independent scalar mass.
+If the calculation requires a counterterm chosen to cancel
+$M_\tau^2|H|^2$, the Branch A Higgs-lightness mechanism fails.
+
+\section{{Top Determinant Mass-Derivative Test}}
+The no-mass-rescue gate can be expressed as a derivative test on the regulated
+determinant.  Let the top-sensitive squared operator be
+\begin{{equation}}
+{{\cal O}}_t(H,\delta)
+=
+{{\cal O}}_0+\delta\,{{\cal O}}_1+H\,{{\cal Y}}+H^\dagger{{\cal Y}}^\dagger
++|H|^2{{\cal M}}_2+\cdots ,
+\end{{equation}}
+all on the same compact domain and with the same regulator as C16--C20.  Define
+\begin{{equation}}
+\Gamma_t^\Lambda(H,\delta)
+=-\frac12
+\operatorname{{Tr}}_{{\mathcal D_{{\rm rel}}}}
+\log\!\left({{\cal O}}_t(H,\delta)/\Lambda^2\right)_\Lambda .
+\end{{equation}}
+The forbidden Higgs mass coefficient is the local curvature at the quotient
+origin:
+\begin{{equation}}
+\mu_t^2(\delta)
+=
+\left.
+\frac{{\partial^2\Gamma_t^\Lambda}}{{\partial H^\dagger\partial H}}
+\right|_{{H=0}} .
+\end{{equation}}
+The gate requires
+\begin{{equation}}
+\mu_t^2(0)=0,\qquad
+\left.\frac{{\partial\mu_t^2}}{{\partial\delta}}\right|_{{\delta=0}}=0
+\end{{equation}}
+unless the resulting term is in the already allowed
+index/anomaly/boundary/frozen-matching residue class.  In trace form the
+dangerous term is
+\begin{{equation}}
+\mu_t^2
+\sim
+\operatorname{{Tr}}\!\left(
+{{\cal O}}_0^{{-1}}{{\cal M}}_2
+-{{\cal O}}_0^{{-1}}{{\cal Y}}{{\cal O}}_0^{{-1}}{{\cal Y}}^\dagger
+\right)_{{\rm same\ domain}} .
+\end{{equation}}
+Thus the next real calculation is concrete: compute this same-domain trace and
+show that it vanishes, is quotient-trivial, or reduces to a permitted fixed
+residue.  If it is nonzero and regulator-dependent, the Higgs-lightness route
+fails even if the quartic overlap remains elegant.
+
+The reproducibility packet includes the toy audit
+\texttt{{paper4\_top\_mass\_derivative\_toy\_trace\_v01.csv}}.  It contains
+two deliberately simple cases.  In the paired same-domain case the forbidden
+mass curvature cancels mode-by-mode.  In the unpaired regulator-failure case a
+single shifted positive mode leaves a nonzero curvature.  This is only a toy
+trace, but it fixes the diagnostic signature required of the physical top
+determinant.
+
+The same file also includes a mismatch-sensitivity scan.  The scan shifts one
+positive mode by a controlled fraction and records the induced forbidden
+curvature.  This is useful because the real determinant proof must not merely
+cancel a perfectly symmetric toy example; it must show that any nonzero
+domain/regulator mismatch is either absent by theorem or appears as a detected
+failure mode.
+
+Finally, the toy file compares two cutoff families, exponential and rational.
+In the paired case both regulators keep the forbidden curvature at zero.  In
+the shifted case the curvature becomes cutoff-dependent.  This is the intended
+C20.1 behavior: regulator choice should be invisible only after the same-domain
+positive spectra have really paired.
+
+\begin{{figure}}[h]
+\centering
+\includegraphics[width=0.92\linewidth]{{figures/paper4_top_mass_derivative_toy_stress.pdf}}
+\caption{{Toy top-mass derivative stress test.  Left: a single positive-mode
+mismatch induces a growing forbidden curvature.  Right: paired spectra remain
+zero under two cutoff families, while shifted spectra leave regulator-dependent
+curvature.  This is a diagnostic toy audit, not the physical top determinant,
+and is not used as independent evidence for radiative stability.}}
+\end{{figure}}
+
+\section{{Top Determinant Finite-Residue Extraction Gate}}
+The previous sections show what must cancel.  The remaining physical question
+is narrower: after same-domain positive-mode cancellation, what finite
+top-sensitive residue is still admissible?  Define the regulated signed
+determinant difference by
+\begin{{equation}}
+\Delta\Gamma_t^\Lambda(H)
+=
+\Gamma_{{t,-}}^\Lambda(H)-\Gamma_{{t,+}}^\Lambda(H),
+\end{{equation}}
+and subtract the parts already fixed by the paired positive spectrum,
+kernel/index sector, anomaly/Ward sector, and boundary sector:
+\begin{{equation}}
+R_t^{{\rm fin}}(H)
+=
+{{\rm FP}}_{{\Lambda\to\infty}}
+\left[
+\Delta\Gamma_t^\Lambda(H)
+-\Delta\Gamma_t^{{\rm pos}}(H)
+-\Delta\Gamma_t^{{\rm ind/anom/bdry}}(H)
+\right].
+\end{{equation}}
+Here ${{\rm FP}}$ denotes the regulator-independent finite part.  The admissible
+residue condition is
+\begin{{equation}}
+R_t^{{\rm fin}}
+\in
+\operatorname{{span}}\left\lbrace
+R_{{\rm index}},
+R_{{\rm anomaly}},
+R_{{\rm boundary}},
+R_{{\rm frozen\ matching}}
+\right\rbrace .
+\end{{equation}}
+Any remaining contribution outside this span is not a harmless finite
+correction; it is an unaccounted physical term.  In particular, the Higgs-mass
+curvature
+\begin{{equation}}
+\mu_{{t,{{\rm fin}}}}^2
+=
+\left.
+\frac{{\partial^2 R_t^{{\rm fin}}}}{{\partial H^\dagger\partial H}}
+\right|_{{H=0}}
+\end{{equation}}
+must vanish, be quotient-null, or be a fixed parent-derived matching residue.
+It may not be adjusted after the endpoint is known.  This is the finite-residue
+extraction gate: the paper now defines the required computation, but it does
+not yet compute the physical $R_t^{{\rm fin}}$ from a complete parent QFT.
+
 \section{{Toy Demonstrator}}
 The toy demonstrator sets
 \begin{{equation}}
@@ -2650,7 +4704,7 @@ This is finite and endpoint-free, but it has no GeV interpretation.
 The generated repository checks:
 \begin{{itemize}}
 \item the gamma-function quartic overlap and sensitivity scan;
-\item Wolfram checks for normalization, hypercharge, line quotient, and BRST skeleton;
+\item Wolfram checks for normalization, hypercharge, line quotient, BRST skeleton, and full-derivation gate-ledger coverage;
 \item packet CSV values for $I_4(3/10)$, ${I_QHU:.15f}$, $g_t=18/5$, and $y_t^{{\rm parent}}$;
 \item TeX/PDF regeneration and arXiv source package creation;
 \item explicit claim-boundary strings in the manuscript.
@@ -2674,8 +4728,8 @@ $v_{{\rm eff}}$ & stabilizer-gap route, not measured vev derivation\\
 $R_t$ & running/matching shape gate\\
 $\epsilon_\tau$ & last universal absolute scale blocker\\
 wall-cell embedding & same-domain compact-cell requirement\\
-top determinant & positive-spectrum cancellation theorem-candidate\\
-BRST/anomaly/regulator & skeleton only; full QFT closure open\\
+top determinant & positive-spectrum cancellation plus finite-residue extraction gate; physical residue not computed\\
+BRST/anomaly/regulator & same-domain Ward and trace-cancellation gates formulated; parent complex open\\
 Standard Model emergence & roadmap only\\
 \bottomrule
 \end{{longtable}}
@@ -2688,7 +4742,7 @@ The Higgs route would become much stronger if a single final parent action:
 \item selects ${{\cal K}}_\tau$ and ${{\cal W}}_A$ with the required embedding;
 \item fixes $\epsilon_\tau$ and $C_A$ without Higgs/top endpoint data;
 \item closes the BRST/anomaly/regulator package;
-\item computes the physical top determinant and matching map.
+\item computes the physical top finite residue and matching map.
 \end{{enumerate}}
 
 \section{{Conclusion}}
@@ -2712,6 +4766,18 @@ The remaining blockers are now also sharp: $\epsilon_\tau$, $C_A$, compact cell,
 wall embedding, continuum regulator, top determinant, and matching.  Until
 those are derived, this is a disciplined candidate derivation program, not a
 completed Higgs-sector proof.
+
+Negative status at closure: conditional compact spectral theorem and
+parent-domain selection functional formulated within stated operator-domain
+assumptions, but exhaustive domain classification is not closed; conditional
+positive-spectrum determinant cancellation follows within the same-domain
+setup and finite-residue extraction gate is formulated, but no computed
+physical top finite residue;
+conditional anomaly/Ward and representation trace-cancellation gates
+formulated, but no computed parent-derived representation complex;
+UV/continuum admissibility criterion and microscopic completion target
+formulated, but no convergent parent action family; physical matching map and
+endpoint protocol formulated, but no numerical endpoint matching yet.
 
 \end{{document}}
 """
@@ -2759,6 +4825,7 @@ def run_wolfram_audits() -> None:
         "BranchA_Stabilizer_Hypercharge_Audit.wl",
         "G2_Unoriented_Line_Quotient_Audit.wl",
         "Projection_BRST_Skeleton.wl",
+        "Compact_Gate_Ledger_Audit.wl",
     ]
     wolframscript = shutil.which("wolframscript")
     for script in scripts:
@@ -2767,14 +4834,22 @@ def run_wolfram_audits() -> None:
         if wolframscript is None:
             log_path.write_text("blocked_wolframscript_not_installed\n", encoding="utf-8")
             continue
-        result = subprocess.run(
-            [wolframscript, "-file", str(script_path)],
-            cwd=ROOT,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            check=False,
-        )
+        result = None
+        for attempt in range(2):
+            result = subprocess.run(
+                [wolframscript, "-file", str(script_path)],
+                cwd=ROOT,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                check=False,
+            )
+            if result.returncode == 0:
+                break
+            if "license error" not in result.stdout.lower() or attempt == 1:
+                break
+            time.sleep(2)
+        assert result is not None
         log_path.write_text(result.stdout, encoding="utf-8")
 
 
@@ -2822,6 +4897,39 @@ def main() -> None:
         PACKET / "paper4_compact_spectrum_pilot_v01.csv",
         compact_spectrum_pilot_rows(),
         ["operator", "mode", "eigenvalue", "nu", "box_half_length", "grid_points", "interpretation", "guardrail"],
+    )
+    write_csv(
+        PACKET / "paper4_q_paired_spectrum_demo_v01.csv",
+        q_paired_spectrum_demo_rows(),
+        ["quantity", "mode", "value", "nu", "box_half_length", "grid_points", "interpretation", "guardrail"],
+    )
+    write_csv(
+        PACKET / "paper4_anomaly_bridge_audit_v01.csv",
+        anomaly_bridge_audit_rows(),
+        [
+            "case",
+            "bridge_multiplicity",
+            "trace_gate",
+            "cohomology_gate",
+            "spectator_gate",
+            "status",
+            "interpretation",
+            "guardrail",
+        ],
+    )
+    write_csv(
+        PACKET / "paper4_top_mass_derivative_toy_trace_v01.csv",
+        top_mass_derivative_toy_trace_rows(),
+        [
+            "case",
+            "mode",
+            "lambda_minus",
+            "lambda_plus",
+            "mass_curvature_difference",
+            "status",
+            "interpretation",
+            "guardrail",
+        ],
     )
     (SOURCE / "main.tex").write_text(manuscript_tex(), encoding="utf-8")
     (SOURCE / "references.bib").write_text(references_bib(), encoding="utf-8")

@@ -91,12 +91,15 @@ wolframscript -file wolfram/Higgs_Quartic_Overlap_Verification.wl
 wolframscript -file wolfram/BranchA_Stabilizer_Hypercharge_Audit.wl
 wolframscript -file wolfram/G2_Unoriented_Line_Quotient_Audit.wl
 wolframscript -file wolfram/Projection_BRST_Skeleton.wl
+wolframscript -file wolfram/Compact_Gate_Ledger_Audit.wl
 ```
 
 These scripts verify the symbolic/numeric overlap integral, the Branch A
 stabilizer/hypercharge normalization, the unoriented-line quotient consequence,
-and the BRST skeleton. They do not prove the `nu_i=3|Y_i|/5` rule, anomaly
-freedom, regulator safety, or radiative stability.
+the BRST skeleton, and the generated full-derivation gate ledger, including
+C16/C17/C20 subgates, finite-residue extraction, and endpoint-matching
+claim-boundary checks. They do not prove the `nu_i=3|Y_i|/5` rule, anomaly
+freedom, regulator safety, radiative stability, or the Higgs-sector derivation.
 
 ## Main Outputs
 

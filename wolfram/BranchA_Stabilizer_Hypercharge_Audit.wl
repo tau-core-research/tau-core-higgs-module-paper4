@@ -17,7 +17,7 @@ blockEigenvalues = Tally[Diagonal[tSigma]];
 minimalIntegerRatio = {2, -3};
 tracelessCheck = 3 minimalIntegerRatio[[1]] + 2 minimalIntegerRatio[[2]];
 
-nuRuleStatus = "main_blocker: nu_i = 3 |Y_i| / 5 remains a theorem-candidate";
+nuRuleStatus = "conditional_forcing_route: nu_i = 3 |Y_i| / 5 remains theorem-candidate until parent-action derivation";
 
 Print["Tr[T_Sigma] = ", traceTSigma];
 Print["Tr[T_Sigma^2] = ", normTSigma];

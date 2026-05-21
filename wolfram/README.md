@@ -12,6 +12,7 @@ wolframscript -file wolfram/Higgs_Quartic_Overlap_Verification.wl
 wolframscript -file wolfram/BranchA_Stabilizer_Hypercharge_Audit.wl
 wolframscript -file wolfram/G2_Unoriented_Line_Quotient_Audit.wl
 wolframscript -file wolfram/Projection_BRST_Skeleton.wl
+wolframscript -file wolfram/Compact_Gate_Ledger_Audit.wl
 ```
 
 Expected scope:
@@ -27,6 +28,10 @@ Expected scope:
 - `Projection_BRST_Skeleton.wl` checks only the algebraic skeleton:
   `s^2 H = 0`, `Q h = 0`, and the factorized operator form. It is not an
   anomaly or regulator proof.
+- `Compact_Gate_Ledger_Audit.wl` checks the generated full-derivation ledger:
+  continuous C0-C20 gate IDs, required C16/C17/C20 subgate coverage, the
+  finite-residue and endpoint-matching gates, cautious proposition-level
+  language, and no solved-proof status claim.
 
 The main manuscript remains cautious: these scripts support reproducibility of
 the formal skeleton, not validation of the full physical theory.
