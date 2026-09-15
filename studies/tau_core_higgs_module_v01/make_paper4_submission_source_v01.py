@@ -4870,6 +4870,17 @@ def build_arxiv_zip() -> None:
             write_zip_entry(zf, figure, f"figures/{figure.name}")
 
 
+def with_observer_update(text: str, source_dir: Path) -> str:
+    """Preserve the source-owned 2026-09-14 observer appendix on regeneration."""
+    block = (source_dir / "observer_update_20260914.tex").read_text(encoding="utf-8")
+    if "% BEGIN OBSERVER UPDATE 20260914" in text:
+        return text
+    boundary = text.rfind(r"\end{document}")
+    if boundary < 0:
+        raise ValueError("Missing manuscript end")
+    return text[:boundary] + block + "\n" + text[boundary:]
+
+
 def main() -> None:
     SOURCE.mkdir(parents=True, exist_ok=True)
     SOURCE_FIGURES.mkdir(parents=True, exist_ok=True)
@@ -4931,9 +4942,9 @@ def main() -> None:
             "guardrail",
         ],
     )
-    (SOURCE / "main.tex").write_text(manuscript_tex(), encoding="utf-8")
+    (SOURCE / "main.tex").write_text(with_observer_update(manuscript_tex(), SOURCE), encoding="utf-8")
     (SOURCE / "references.bib").write_text(references_bib(), encoding="utf-8")
-    (FULL_DERIVATION / "full_derivation.tex").write_text(full_derivation_tex(), encoding="utf-8")
+    (FULL_DERIVATION / "full_derivation.tex").write_text(with_observer_update(full_derivation_tex(), FULL_DERIVATION), encoding="utf-8")
     run_wolfram_audits()
     pdf_status = compile_pdf()
     full_derivation_status = compile_full_derivation_pdf()
