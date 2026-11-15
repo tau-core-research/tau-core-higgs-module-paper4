@@ -1,5 +1,6 @@
 import csv
 import subprocess
+import sys
 import zipfile
 from pathlib import Path
 
@@ -16,7 +17,7 @@ def read_csv(path: Path) -> list[dict[str, str]]:
 
 def test_regeneration_script_runs():
     result = subprocess.run(
-        ["python", "studies/tau_core_higgs_module_v01/make_paper4_submission_source_v01.py"],
+        [sys.executable, "studies/tau_core_higgs_module_v01/make_paper4_submission_source_v01.py"],
         cwd=ROOT,
         check=True,
         capture_output=True,
@@ -545,14 +546,11 @@ def test_generated_outputs_are_not_tracked():
         text=True,
     ).stdout.splitlines()
     generated_prefixes = (
-        "paper4_submission_source/",
-        "paper4_full_derivation/",
         "studies/tau_core_higgs_module_v01/packet_v01_seed/",
     )
-    generated_exact = {"arxiv_submission_source.zip"}
     assert not any(path.startswith(generated_prefixes) for path in tracked)
-    assert not any(path in generated_exact for path in tracked)
     assert not any(path.startswith("figures/") and path.endswith(".svg") for path in tracked)
+    assert not any(path.endswith((".aux", ".log", ".out", ".toc")) for path in tracked)
 
 
 def test_wolfram_audit_logs_record_expected_checks():

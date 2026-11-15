@@ -1,0 +1,25 @@
+{
+  "date": "2026-10-09",
+  "manuscripts": [
+    {
+      "source": "paper4_submission_source/main.tex",
+      "role": "mass-import",
+      "source_sha256": "77447d7eec378c9de698929854dbab0194813e982dc160b4eff4bdb89570f6fa"
+    },
+    {
+      "source": "paper4_full_derivation/full_derivation.tex",
+      "role": "MSI1-owner",
+      "source_sha256": "ffae5d623f86b07447c113b472361f224e15c064b12a6b2e872188c23430a3b3"
+    }
+  ],
+  "empirical_scores_changed": false,
+  "nature_occupation_proved": false,
+  "tau_specific_evidence": false,
+  "mass_candidate_retained": true,
+  "owners": {
+    "OIR1": "https://github.com/tau-core-research/tau-core-quantum-readout-foundation-paper-vi/blob/main/paperVI_submission_source/main.pdf#nameddest=oir1",
+    "MSI1": "https://github.com/tau-core-research/tau-core-higgs-module-paper4/blob/main/paper4_full_derivation/full_derivation.pdf#nameddest=msi1"
+  },
+  "canonical_hub": "https://github.com/tau-core-research/tau-core-theory/blob/main/docs/tau_core_seed_base_inverse_identifiability_and_constant_provenance_001.md",
+  "interpretation": "conditional completion and applicability audit"
+}

@@ -4,7 +4,10 @@
 from __future__ import annotations
 
 import csv
+import hashlib
+import json
 import math
+import os
 import shutil
 import subprocess
 import time
@@ -1062,13 +1065,14 @@ def manuscript_tex() -> str:
     lambda_hi = max(lambda_values)
     return rf"""\documentclass[11pt]{{article}}
 \usepackage[margin=1in]{{geometry}}
-\usepackage{{amsmath,amssymb,booktabs,graphicx,hyperref,xurl}}
-\usepackage{{authblk}}
+\PassOptionsToPackage{{hyphens}}{{url}}
+\usepackage{{amsmath,amssymb,booktabs,graphicx,hyperref}}
+\IfFileExists{{xurl.sty}}{{\usepackage{{xurl}}}}{{}}
 \emergencystretch=3em
 \hypersetup{{colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue}}
 \title{{A Branch A cohomological Higgs module: stabilizer-derived quartic overlap and lightness-protection gates}}
 \author{{Jozsef Olcsak}}
-\date{{May 19, 2026}}
+\date{{May 19, 2026\\Last revised: November 14, 2026}}
 \begin{{document}}
 \maketitle
 
@@ -1076,12 +1080,17 @@ def manuscript_tex() -> str:
 We describe a constrained Branch A projection/cohomology Higgs module in which
 the observed four-dimensional Higgs is treated as the visible projection of a
 tau-profiled parent field. The central reproducible calculation links a
-minimal $3+2$ stabilizer, the canonical hypercharge direction, a Higgs
-localization exponent $\nu_D=3/10$, and a zero-mode quartic overlap
-$I_4(3/10)={i4_d:.6f}$. Under the stated Branch A rule, the observed Higgs
-quartic corresponds to an order-one parent quartic rather than to an extreme
-hierarchy. The construction remains a candidate mechanism with explicit
-validation gates. It is not a completed Standard Model derivation, not a proof
+minimal $3+2$ stabilizer, the canonical hypercharge direction
+$\kappa_\tau^2=3/5$, a Higgs localization exponent $\nu_D=3/10$, and a
+zero-mode quartic overlap $I_4(3/10)={i4_d:.6f}$. Under the stated Branch A rule,
+the observed Higgs quartic corresponds to an order-one parent quartic
+rather than to an extreme hierarchy, while a controlled top/flavor deformation
+about the parent/wall mass scale $M_\tau$ (distinct from the stabilized
+morphological parent body $M_\tau^\star$ of the foundational series) sets a
+testable multi-TeV spectral target. We formulate the compact orbifold spectral
+pairing, same-domain zeta-determinant cancellation, and finite-residue
+extraction gates required for radiative stability. The construction remains a
+candidate mechanism with explicit validation gates. It is not a completed Standard Model derivation, not a proof
 of any parent projection theory, and not an empirical claim.
 \end{{abstract}}
 
@@ -1845,7 +1854,7 @@ and therefore
 \begin{{equation}}
 \mu_H^2=\frac9{{80}}\delta_\star M_\tau^2 .
 \end{{equation}}
-This section is a roadmap calculation: the top determinant must still be completed before the deformation can be promoted to a derived prediction. The current parent-hub refinement identifies the relevant top-sensitive slot as an up-type closure channel and records a same-domain wall-$Q$ determinant pilot. These are gate refinements, not a completed determinant. In particular, the manuscript does not yet prove radiative stability or solve the hierarchy problem. The top/flavor determinant remains the hardest gate: it must show that mismatch-independent and linear mass terms are absent or quotient-trivial, and it must derive the physical Yukawa strength rather than inserting it.
+Throughout this manuscript, $M_\tau$ denotes the multi-TeV parent/wall mass scale of the Branch A electroweak/Higgs module; it should not be confused with the stabilized morphological parent body $M_\tau^\star$ of the foundational Roman and Technical Derivation (TD) series. This section is a roadmap calculation: the top determinant must still be completed before the deformation can be promoted to a derived prediction. The current parent-hub refinement identifies the relevant top-sensitive slot as an up-type closure channel and records a same-domain wall-$Q$ determinant pilot. These are gate refinements, not a completed determinant. In particular, the manuscript does not yet prove radiative stability or solve the hierarchy problem. The top/flavor determinant remains the hardest gate: it must show that mismatch-independent and linear mass terms are absent or quotient-trivial, and it must derive the physical Yukawa strength rather than inserting it.
 
 This is where the proposal meets the usual naturalness problem most directly.
 The overlap calculation can make the tree-level quartic look natural, but it
@@ -1861,7 +1870,7 @@ stays zero under both regulators, while the shifted spectrum leaves a
 regulator-dependent residue.  This is not the physical top determinant, but it
 fixes the diagnostic that the real calculation must pass.
 
-\begin{{figure}}[h]
+\begin{{figure}}[ht]
 \centering
 \includegraphics[width=0.86\linewidth]{{figures/paper4_top_mass_derivative_toy_stress.pdf}}
 \caption{{Toy mass-derivative stress test for the top determinant gate.  The
@@ -2013,15 +2022,17 @@ The technical companion keeps the full operator-domain ledger, but the main
 paper needs the core logic explicitly.  The protection route is not merely a
 localized wave-function ansatz.  It is the following compact spectral program:
 \begin{{equation}}
+\begin{{aligned}}
 \text{{compact domain}}
-\rightarrow
+&\rightarrow
 Q\text{{-paired self-adjoint operators}}
 \rightarrow
-\text{{index residue}}
-\rightarrow
+\text{{index residue}} \\
+&\rightarrow
 \text{{zeta-determinant cancellation}}
 \rightarrow
 \text{{allowed finite residues only}} .
+\end{{aligned}}
 \end{{equation}}
 The candidate compact geometry is the orbifold package
 ${{\cal K}}_\tau=S^1/\mathbb Z_2$ with a first-order wall operator $Q_\nu$.
@@ -2126,7 +2137,7 @@ At the present stage the paper sits at the first level and partially organizes
 the next levels.  It does not yet license the later claims.
 
 \section{{Near-Term Falsifiable Prediction}}
-The current module predicts a narrow kind of future test rather than an already validated signal. If the top/flavor deformation gate is completed with a natural spurion $\delta_\star\sim10^{{-3}}$, the same equations imply a parent scale $M_\tau$ in the multi-TeV range and a Higgs-sector spectral threshold
+The current module predicts a narrow kind of future test rather than an already validated signal. If the top/flavor deformation gate is completed with a natural spurion $\delta_\star\sim10^{{-3}}$, the same equations imply a Branch A module mass scale $M_\tau$ (again distinct from the foundational morphological body symbol $M_\tau^\star$) in the multi-TeV range and a Higgs-sector spectral threshold
 \begin{{equation}}
 m_{{\rm gap}}\simeq\nu_D M_\tau \sim 2\text{{--}}4\,{{\rm TeV}}.
 \end{{equation}}
@@ -2151,6 +2162,57 @@ The module would fail if any of the following gates fail:
 the measured Higgs vev or top mass;
 \item the TeV-sector spectral window is excluded by Higgs coupling or direct-search constraints.
 \end{{itemize}}
+
+\section{{Upstream Interface and Canonical Three-Pillar Bridge}}
+\label{{sec:upstream-interface}}
+
+% BEGIN OBSERVER UPDATE 20260914
+\subsection{{Observer Realization: Inherited Results and Physical Boundary}}
+\label{{sec:observer-update-20260914}}
+The upstream observer programme distinguishes a conditional mathematical
+construction from an occupied physical measuring system. The source order
+remains base plus one universal seed, stabilized morphological response
+$M_\tau^\star$, observer--source restriction, shared descriptor, and resolved
+terminal readouts. Neither a detector nor an empirical residual constructs the
+parent body backwards; dynamics concern downstream subsystems only.
+
+In Technical Paper TD-II (\emph{{Body-to-Readout Derivation}}), the joint source
+action fixes static and frequency-dependent response together: variation of the
+BRAC potential couples to the field square, fixed canonical means select a
+unique coherent state in a finite positive harmonic packet only at zero excess
+fluctuation energy, and for the coupled harmonic pair the joint ground state is
+pure while either local subsystem is mixed with covariance fixed by the
+complete joint Hamiltonian. The ORA-T1 selector conditionally chooses stable
+quantizers when the occupied context, admissible partition family, and positive
+closure barrier are supplied, without proving those physical premises or
+implementing a physical quantizer $Q_{{OS}}$. Foundation Papers IV, V, and VI
+retain physical-selection, clock-descent, and quantum-readout ownership,
+respectively. These results do not select a particle spectrum, coupling
+constant, Higgs vacuum, or gravitational terminal; common source ancestry
+remains weaker than physical realization of those sectors.
+% END OBSERVER UPDATE 20260914
+
+% BEGIN STATE UPDATE 20260918
+\subsection{{Source Identification and Recovery}}
+The observer audit separates a conditional forward construction from physical source selection. A frozen body, occupied observer incidence, preparation, complete instrument, and stable resolution can determine records without selecting those inputs from Nature. Equal effects do not fix postmeasurement states, and symmetry within a chosen interaction family does not exclude other symmetric couplings. Foundation VI and Technical Paper TD-II own the finite instrument/access proof; Foundation IV and TD-0 retain physical source selection; Foundation V, the temporal synthesis, and the seed--body companion own the gradient/inertial distinction. Canonical assumptions, countermodels, and calibration audits are archived at \url{{https://github.com/tau-core-research/tau-core-theory/blob/main/docs/tau_rqm_instrument_to_record_bridge_001.md}}. No physical seed, Nature occupation, or Tau-exclusive observation is established by this interface, and existing endpoint definitions are unchanged.
+% END STATE UPDATE 20260918
+
+% BEGIN PAIR READOUT UPDATE 20260927
+\paragraph{{Imported result (CPR1).}}
+\href{{https://github.com/tau-core-research/tau-core-higgs-module-paper4/blob/main/paper4_full_derivation/full_derivation.pdf#nameddest=cpr1}}{{Paper 4, \emph{{Full Derivation Ledger for the Branch A Higgs Module}}}}, section ``Conditional source preparation and time-resolved access,'' Theorem CPR1(a,c), v1.0 (2026-09-28), is the sole proof owner.
+The common scalar--Dirac operator admits conditional pair transfer and time-resolved emission. It does not thereby select particle occupation, couplings or a vacuum; inclusive widths and coherent mode coupling remain distinct inputs. No additional particle or gravity recovery is claimed.
+Physical preparation, detector/clock calibration and stable $Q_{{OS}}$ remain assumptions; no Tau-exclusive observation follows.
+% END PAIR READOUT UPDATE 20260927
+
+% BEGIN SOURCE INSTRUMENT RECONCILIATION 20261009
+\paragraph{{Current source/readout status (9 October 2026).}}
+\href{{https://github.com/tau-core-research/tau-core-quantum-readout-foundation-paper-vi/blob/main/paperVI_submission_source/main.pdf#nameddest=oir1}}{{Foundation VI, OIR1(a--c), v1.0}} (``Output statistics, surviving-source instruments and apparatus scope'') and \href{{https://github.com/tau-core-research/tau-core-higgs-module-paper4/blob/main/paper4_full_derivation/full_derivation.pdf#nameddest=msi1}}{{Paper 4 full derivation, MSI1, v1.0}} (``Source work, bilinear mass pairing and independent selection''), both dated 9 October 2026, own the proofs.
+The detailed companion now owns MSI1: positive Hermitian source work is insufficient to choose the symmetric mass pairing. The existing Branch A benchmark and successful inverse candidate remain separate constructions with their stated calibrations. OIR1 owns the measurement-operation audit. No Higgs benchmark, fit or CPR1 result is changed.
+These are conditional mathematics and standard-compatible controls, not Nature occupation or Tau-exclusive evidence. Stable $Q_{{OS}}$ and physical calibration remain open; empirical scores are unchanged.
+% END SOURCE INSTRUMENT RECONCILIATION 20261009
+
+\subsection{{Canonical Three-Pillar Reduction (2026-11-14)}}
+In the consolidated 2026-11-14 Three-Pillar Canonical Reduction of the foundational series (Theorems U1--U4, F1--F4, COV-DIR, and HOMOG-K4), the discrete $K_4$/Clifford projector lock fixes $r_{{\mathrm{{seed}}}}=1/4$ and the macroscopic logarithmic response coefficient $\alpha_{{\mathrm{{OCSR}}}}=\frac{{5\sqrt{{3}}}}{{24}}$ with $k=0$ free fitted parameters, leaving only the single ontic realization postulate (\texttt{{POST-OCC-NU1}} / \texttt{{EAS-SNPR-N1}}). That macroscopic gravitational/galactic lock does not close the microscopic electroweak/Higgs proof gates (C0--C20) studied in this paper: the Branch A $3+2$ localization, compact-domain pairing, and top-determinant gates remain independent conditional obligations.
 
 \section{{Conclusion}}
 The Branch A Higgs module links a $3+2$ stabilizer, hypercharge normalization,
@@ -2318,24 +2380,35 @@ def full_derivation_tex() -> str:
     toy_mass = Y_T_PARENT / math.sqrt(2.0)
     return rf"""\documentclass[11pt]{{article}}
 \usepackage[margin=0.85in]{{geometry}}
-\usepackage{{amsmath,amssymb,booktabs,graphicx,hyperref,xurl,longtable,array}}
+\PassOptionsToPackage{{hyphens}}{{url}}
+\PassOptionsToPackage{{pdfencoding=auto,psdextra}}{{hyperref}}
+\usepackage{{amsmath,amssymb,booktabs,graphicx,hyperref,longtable,array}}
+\IfFileExists{{xurl.sty}}{{\usepackage{{xurl}}}}{{}}
+\emergencystretch=2em
 \hypersetup{{colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue}}
 \setlength{{\parskip}}{{0.45em}}
 \setlength{{\parindent}}{{0pt}}
 \title{{Full Derivation Ledger for the Branch A Higgs Module}}
 \author{{Jozsef Olcsak}}
-\date{{May 20, 2026}}
+\date{{May 20, 2026\\Last revised: November 14, 2026}}
 \begin{{document}}
 \maketitle
 
 \begin{{abstract}}
-This companion ledger expands the derivation chain behind Paper 4.  It is not
-an empirical paper, not a complete Standard Model derivation, and not a claim
-that the Higgs sector has been solved.  Its purpose is to collect the working
-Branch A gate stack in one generated PDF: stabilizer normalization,
-localization forcing, quartic overlap, Yukawa product, bridge-trace
-normalization, v0.2 single-package parent action, absolute-scale gate,
-wall-cell embedding, and the remaining top/BRST/regulator blockers.
+This companion ledger expands the mathematical derivation chain behind Paper 4
+of the Tau Core series.  It is not an empirical paper, not a complete Standard
+Model derivation, and not a claim that the Higgs sector or hierarchy problem
+has been solved.  Its purpose is to collect the working Branch A gate stack
+(C0--C20) and the normative upstream conditional proofs (Theorem CPR1 and
+Proposition MSI1) in a single generated reference ledger: $3+2$ stabilizer
+normalization ($\kappa_\tau^2=3/5$), F1--F8 localization forcing,
+zero-mode quartic overlap $I_4(3/10)={i4_d:.6f}$, Yukawa product and
+bridge-trace normalization ($y_t^{{\rm parent}}={Y_T_PARENT:.10f}$), the v0.2
+single-package parent-action scaffold, the $\epsilon_\tau$ absolute-scale gate,
+orbifold wall-cell spectral pairing, and the remaining top-determinant,
+BRST/Ward, and regulator blockers.  Throughout, $M_\tau$ denotes Paper 4's
+multi-TeV Branch A module mass scale, distinct from the stabilized
+morphological parent body $M_\tau^\star$ of the foundational series.
 \end{{abstract}}
 
 \tableofcontents
@@ -2360,16 +2433,17 @@ vev, measured Higgs mass, or top mass and then presented as derived.
 \section{{Global Dependency Chain}}
 The current Higgs-route dependency chain is
 \begin{{equation}}
+\begin{{aligned}}
 3+2
-\rightarrow
+&\rightarrow
 T_Y
 \rightarrow
 \kappa_\tau^2=\frac35
 \rightarrow
 Q_i=\partial_x+\kappa_\tau^2Y_i\tanh x
 \rightarrow
-\nu_i=\kappa_\tau^2|Y_i|
-\rightarrow
+\nu_i=\kappa_\tau^2|Y_i| \\
+&\rightarrow
 I_4(3/10)
 \rightarrow
 {{\cal I}}_{{qHu}}
@@ -2379,6 +2453,7 @@ y_t^{{\rm parent}}
 \Lambda_A
 \rightarrow
 m_t^{{\rm candidate}}.
+\end{{aligned}}
 \end{{equation}}
 The first part is dimensionless and comparatively sharp.  The last part is a
 scale/matching problem and remains open.
@@ -4542,7 +4617,7 @@ c_0+c_2^{{\rm prot}}|H|^4
 +\delta\,{{\cal O}}_{{\rm bridge}}[H]
 +{{\cal O}}(\delta^2),
 \end{{equation}}
-with the forbidden terms
+with the forbidden terms (where $M_\tau$ denotes Paper 4's multi-TeV Branch A module mass scale, distinct from the stabilized morphological parent body $M_\tau^\star$ of the foundational series)
 \begin{{equation}}
 \Delta\Gamma_t^{{\rm forbidden}}
 =
@@ -4628,7 +4703,7 @@ the shifted case the curvature becomes cutoff-dependent.  This is the intended
 C20.1 behavior: regulator choice should be invisible only after the same-domain
 positive spectra have really paired.
 
-\begin{{figure}}[h]
+\begin{{figure}}[ht]
 \centering
 \includegraphics[width=0.92\linewidth]{{figures/paper4_top_mass_derivative_toy_stress.pdf}}
 \caption{{Toy top-mass derivative stress test.  Left: a single positive-mode
@@ -4745,6 +4820,448 @@ The Higgs route would become much stronger if a single final parent action:
 \item computes the physical top finite residue and matching map.
 \end{{enumerate}}
 
+\section{{Upstream Interface, Normative Proofs (CPR1, MSI1), and Three-Pillar Bridge}}
+\label{{sec:upstream-interface-normative}}
+
+% BEGIN OBSERVER UPDATE 20260914
+\subsection{{Observer Realization: Inherited Results and Physical Boundary}}
+\label{{sec:observer-update-20260914}}
+The current observer programme distinguishes a conditional mathematical
+construction from an occupied physical measuring system. The source order
+remains base plus one universal seed, stabilized morphological response
+$M_\tau^\star$, observer--source restriction, shared descriptor, and resolved
+terminal readouts. Neither a detector nor an empirical residual constructs the
+parent body backwards. Dynamics below concern downstream subsystems only.
+
+Technical Paper TD-II (\emph{{Body-to-Readout Derivation}}) owns the following
+results. The existing joint source action fixes static and frequency-dependent
+response together. Variation of the BRAC potential couples to the field
+square; a linear field coupling is a distinct comparator unless derived by
+expansion about an occupied background. Fixed canonical means select a unique
+coherent state in a finite positive harmonic packet only if there is no excess
+fluctuation energy. This is a free/asymptotic preparation statement, not the
+ground state of an interacting detector. For the existing coupled harmonic
+pair, the joint ground is pure but either local subsystem is mixed, with its
+covariance fixed by the complete joint Hamiltonian.
+
+These are conditional derivations and internal numerical checks. The actual
+observer--source context, physical preparation process, kinetic/energy
+calibration and stable operational resolution remain unproved. The existing
+ORA-T1 selector conditionally chooses stable quantizers when the occupied
+context, admissible partition family and positive closure barrier are supplied;
+it does not establish those physical premises. A computed ground state is not
+a preparation mechanism, and a covariance or optimal abstract measurement is
+not an implemented stable quantizer $Q_{{OS}}$.
+
+\paragraph{{Ownership and use.}}
+The central observer-origin note owns the new contact, state and covariance
+derivations; Technical Paper TD-II carries the consolidated
+mathematics. Foundation Papers IV, V and VI retain physical-selection,
+clock-descent and quantum-readout ownership, respectively. This paper imports
+only the consequences within its scope. No observational dataset, baseline,
+frozen coefficient, score or empirical conclusion is revised by this update.
+The reproducibility supplement records the source hashes and the exact
+conditional/physical distinction.
+
+\paragraph{{Consequence for this paper.}}
+These results do not select a particle spectrum, coupling constant, Higgs vacuum or gravitational terminal. Common source ancestry remains weaker than physical realization of those sectors.
+
+\subsubsection{{Inherited contact and the occupied-state distinction}}
+For a positive symmetric three-dimensional quotient $K$, define
+$t_K=\operatorname{{tr}}K$ and $s_K=\operatorname{{tr}}K^2$. The BRAC shape
+invariant and its differential are
+\begin{{align}}
+ I_K&=9s_K/t_K^2-3,\\
+ dI_K[\delta K]&=\operatorname{{tr}}
+ \left[\left(18K/t_K^2-18s_K\mathbf{{1}}/t_K^3\right)\delta K\right].
+\end{{align}}
+If $K=(LH^{{-1}}L^*)^{{-1}}$ on the nonsingular leaf, then
+$\delta K=-K\delta(LH^{{-1}}L^*)K$. Common scaling and orthogonal frame
+rotation have zero $dI_K$; the existing spectral-shape control has
+$I_K'(0)=-1.06341377025\ldots$. This does not identify its coordinate with
+a physical apparatus displacement.
+
+For one real canonically normalized field at fixed coframe and length,
+\begin{{equation}}
+ S_K=-\frac12\int \sqrt{{-g}}\,\frac{{I_K}}{{\ell_H^2}}\phi^2\,d^4x,
+ \qquad b_j=\ell_H^{{-2}}dI_K[\partial_{{a_j}}K].
+\end{{equation}}
+The corresponding potential interaction is
+$H_{{\rm int}}=\sum_j a_j B_j$ with
+$B_j=\frac12\int b_j\phi^2\,d^3x$. The actual subsystem pullback,
+kinetic terms and calibration remain required. For a free real scalar in
+a stationary inertial vacuum the Wick-square correlation is $2W^2$,
+so this contact has a two-quantum threshold $2\nu_B$, not the linear
+comparator's $\nu_B$. With $c=\hbar=\ell_H=1$, $m_0=0$ and the
+source CHDF value $I_K=0.0610078751932586$, the thresholds are
+$0.24699772305278$ and $0.49399544610556$. The previous comparison gaps
+$0.35$ and $0.15$ therefore have different support in the two contact models.
+Neither threshold is asserted for arbitrary trajectories or occupied states.
+
+For a supplied coherent background, mean force and connected covariance
+follow from the same contact:
+\begin{{align}}
+ \langle B_i\rangle&=\frac12\int b_i\phi_{{\rm cl}}^2\,d^3x,\\
+ C_{{ij}}(t,t')&=\int d^3x\,d^3y\,b_i(x)b_j(y)
+ \left[\phi_{{\rm cl}}(t,x)\phi_{{\rm cl}}(t',y)W(t,x;t',y)
+ +\frac12 W(t,x;t',y)^2\right].
+\end{{align}}
+Vacuum Wick ordering here is a comparison prescription, not a derivation
+of the physical stress renormalization. A nonzero classical mean does not
+by itself select this quantum state. The kernel is a free interaction-picture
+input, generally nonstationary, not an all-orders interacting bath law.
+
+\subsubsection{{Conditional state selection and its resource requirement}}
+For a supplied finite positive oscillator packet, fixed means
+$\operatorname{{Tr}}(\rho c_r)=\alpha_r$ imply
+\begin{{equation}}
+ \langle H_{{\rm exc}}\rangle=
+ \sum_r\hbar\omega_r|\alpha_r|^2+
+ \sum_r\hbar\omega_r
+ \langle(c_r-\alpha_r)^\dagger(c_r-\alpha_r)\rangle.
+\end{{equation}}
+The second sum is nonnegative. Equality with the classical mean energy
+forces the state into the common kernel of all $c_r-\alpha_r$, hence the
+unique coherent state. With excess energy $\Delta E$,
+\begin{{equation}}
+ 1-\langle\alpha|\rho|\alpha\rangle
+ \leq \frac{{\Delta E}}{{\hbar\omega_{{\min}}}}.
+\end{{equation}}
+Displaced number states have the same means and higher energy, providing
+an explicit counterexample when the zero-excess condition is omitted.
+Ground-state minimization does not provide autonomous preparation.
+For energy-calibrated amplitude $\psi_E$, the source-preserving displacement
+is $\alpha=(2\hbar\Omega)^{{-1/2}}\psi_E$. If the input is action-normalized,
+the energy/clock conversion remains necessary; it cannot be replaced by
+setting every mode frequency to one.
+
+For a declared common-frame tetrahedral coherent code, equal priors and
+$\alpha_i=\sqrt{{N}}n_i$, $n_i\cdot n_j=-1/3$, the off-diagonal overlap is
+$s=\exp(-4N/3)$. The exact optimal single-shot discrimination probability is
+\begin{{equation}}
+ P_{{\rm opt}}=\frac{{[\sqrt{{1+3s}}+3\sqrt{{1-s}}]^2}}{{16}}.
+\end{{equation}}
+The square-root measurement attains this value. With $S=\sqrt{{G}}$ and
+$d=S_{{ii}}$, the dual operator $Y=dS/4$ has matching trace and
+$Y-v_iv_i^*/4\succeq0$ for columns $v_i$ of $S$, proving optimality.
+Uniform pure loss replaces $N$ by $\eta N$ only in that declared channel
+model. This coherent code is not the earlier one-particle leaf encoding;
+the bound does not construct a physical receiver or stable $Q_{{OS}}$.
+
+\subsubsection{{Joint coupling fixes local uncertainty}}
+The existing two-copy action, expanded at an already aligned local well,
+has $H=\left(\begin{{smallmatrix}}D&-C\\-C^T&D\end{{smallmatrix}}\right)$,
+$D=e_*(S_i+16\mathbf1)$, $C=16e_*\mathbf1$ and
+$S_i=3P_i+4(\mathbf1-P_i)$. Given a positive kinetic matrix $G$,
+canonical quantization and joint harmonic ground preparation, put
+$W=(G^{{-1/2}}HG^{{-1/2}})^{{1/2}}$. Normal-mode diagonalization gives
+\begin{{equation}}
+ V_z=\frac\hbar2G^{{-1/2}}W^{{-1}}G^{{-1/2}},\qquad
+ V_p=\frac\hbar2G^{{1/2}}WG^{{1/2}}.
+\end{{equation}}
+For equal inertia $I_0$, a ray of curvature $s_0=3,4$ has frequencies
+$\omega_c^2=e_*s_0/I_0$ and $\omega_r^2=e_*(s_0+32)/I_0$. Its local
+symplectic eigenvalue is
+\begin{{equation}}
+ \nu_{{s_0}}=\frac14\sqrt{{2+\omega_r/\omega_c+\omega_c/\omega_r}}>\frac12.
+\end{{equation}}
+The joint state is pure but the equal-inertia three-mode local purity is
+$0.627817314635553$. The local position covariance also equals
+\begin{{equation}}
+ V_x=\frac\hbar\pi\int_0^\infty
+ \left[D+I_0\xi^2\mathbf1-C(D+I_0\xi^2\mathbf1)^{{-1}}C^T\right]^{{-1}}d\xi.
+\end{{equation}}
+Thus the full frequency-dependent Schur kernel, not its static value followed
+by a local vacuum assignment, determines the fluctuations. For dimensionless
+coordinates, $H$ has energy units, $G$ energy-times-time-squared units, and
+$\hbar/\sqrt{{I_0e_*}}$ controls fluctuation size.
+
+The unit-scale Gaussian has only $0.18974552836899916$ probability inside
+the previously declared radius $\sqrt{{8/3}}/4$ about the chosen vertex.
+That control does not certify localized records. The state is a local
+quadratic-well ground, not the full nonlinear multiwell ground or the
+outcome of a preparation process. Its copies have not been physically
+identified with the BRAC observer. An adopted acceptance ball is not a
+source-selected stable quantizer or a measured efficiency.
+
+\paragraph{{Scientific status.}}
+The canonical calculations supply exact conditional identities and finite
+numerical controls, not Nature occupation. Physical observer identification,
+preparation, nonlinear record stability and calibrated operational resolution
+remain open. Standard quadratic-detector, coherent-state and coupled-Gaussian
+physics supply comparison methods, not evidence of a Tau-specific effect.
+% END OBSERVER UPDATE 20260914
+
+% BEGIN STATE UPDATE 20260918
+\subsection{{Source Identification and Recovery}}
+The current observer audit separates a conditional forward construction from physical source selection. A frozen body, occupied observer incidence, preparation, complete instrument and stable resolution can determine records without selecting those inputs from Nature. Equal effects do not fix postmeasurement states, and symmetry within a chosen interaction family does not exclude other symmetric couplings. These results do not select a particle spectrum, coupling constant, Higgs vacuum or gravitational terminal. Common source ancestry remains weaker than physical realization of those sectors.
+
+\paragraph{{Dependency and claim ownership.}}
+Foundation VI and Technical Paper TD-II own the finite instrument/access proof; Foundation IV and TD-0 retain physical source selection; Foundation V, the temporal synthesis and seed--body companion own the gradient/inertial distinction. This paper inherits only the stated specialization. Canonical assumptions, countermodels and calibration audits are in \url{{https://github.com/tau-core-research/tau-core-theory/blob/main/docs/tau_rqm_instrument_to_record_bridge_001.md}}. No physical seed, Nature occupation or Tau-exclusive observation is established by this update. Existing empirical endpoint definitions and scores are unchanged.
+% END STATE UPDATE 20260918
+
+% BEGIN PAIR READOUT UPDATE 20260927
+\subsection{{Conditional Source Preparation and Time-Resolved Access}}
+\label{{sec:common-operator-preparation-readout}}
+\hypertarget{{cpr1}}{{}}
+\paragraph{{Theorem CPR1 (conditional preparation/readout, version 1.0,
+2026-09-28).}}\label{{thm:cpr1}}
+This section is the sole normative manuscript statement and proof of CPR1.
+Parts (a)--(c) below apply to the declared finite resonant model, not to an
+unselected physical apparatus. Natural units $\hbar=c=1$ are used; $G$ and
+$\Gamma$ are inverse-time quantities in the exchange/loss equations.
+The scalar spectrum and partial widths are upstream numerical inputs,
+not consequences of the finite-sector theorem.
+The common-operator scalar--Dirac completion now supports an explicit
+conditional chain from interaction vertices to pair transfer and joint
+readout. Nonzero vertices do not select occupation. Relational coherence
+can be generated from an occupied number-diagonal pair even while both
+local mean fields vanish. In a declared resonant rotating-wave and Markov
+loss model, finite-window emission retains this coherence information,
+whereas an all-time count discards it. This is standard-compatible quantum
+recovery, not a Tau-specific observational residual.
+These results do not select a particle spectrum, coupling constant, Higgs vacuum or gravitational terminal. Common source ancestry remains weaker than physical realization of those sectors.
+\paragraph{{Frozen model and preparation boundary.}}
+The conditional completion uses a constant scalar kinetic metric $K$, a
+stationary potential Hessian $H_*$, and a common Dirac mass operator $gD_*$.
+Scalar masses obey $H_*u=M^2Ku$ and fermion masses are $g|d_i|$.
+The signed masses are retained in the transformed Yukawa spin factors.
+For the four selected pump directions, the inclusive fermionic partial
+widths at the stipulated $g=1$ benchmark are
+$0.10031707,0.12080077,0.15789991,0.14826014$ in model mass units.
+Their ratios to scalar mass range from $0.09459$ to $0.11929$; these are
+not measured lifetimes or a parametrically narrow-resonance proof.
+Single-fermion emission into these pumps is kinematically closed at this
+point; inverse fermion--antifermion preparation has allowed on-shell
+momenta, but no incoming population is thereby selected.
+
+For a canonical homogeneous mode in a declared volume, a displacement
+$A\sqrt{{w_C}}$ with zero mean velocity has minimum coherent density
+$n_C=M_CA^2w_C/2$. Positivity gives
+$\langle N\rangle\geq|\langle a\rangle|^2$; a displaced thermal state
+has the same mean and larger occupation. This is a conditional bound,
+not selection of a coherent initial state.
+
+\paragraph{{CPR1(a): pair transfer and joint coherence.}}
+On an isolated resonant pair/scalar sector let
+\[
+ B=|\mathrm{{empty}}\rangle\langle\mathrm{{pair}}|,\qquad
+ H_I=G a^\dagger B+G^*B^\dagger a.
+\]
+Choose a real positive $G$ convention
+and $\theta=Gt$. An initially occupied pair probability $p$ with no
+local phase coherence evolves to
+\[
+ \langle N_\phi\rangle=p\sin^2\theta,\qquad
+ \langle a\rangle=0,\qquad
+ \langle a^\dagger B\rangle=ip\sin\theta\cos\theta.
+\]
+The last quantity is invariant under common total-number phase rotation.
+It requires occupation, not an external absolute phase reference.
+A single pair nevertheless cannot prepare a nonzero exact coherent
+oscillator state.
+\emph{{Proof.}} On the ordered occupied basis $|P\rangle,|S\rangle$,
+$H_I=GX$. Therefore
+\[
+ U(t)=\cos\theta I-i\sin\theta X,\qquad
+ U(t)|P\rangle=\cos\theta|P\rangle-i\sin\theta|S\rangle.
+\]
+Evolving $p|P\rangle\langle P|+(1-p)|0\rangle\langle0|$ gives the three
+expectations above. The transfer $a^\dagger B=|S\rangle\langle P|$
+commutes with the total excitation number; its expectation therefore does
+not require a common absolute phase. The oscillator marginal has support
+only on occupations zero and one, whereas a nonzero coherent state has
+nonzero higher-number components. For the earlier coherent-density bound,
+write $\alpha=\langle a\rangle$ and use
+$\langle(a-\alpha)^\dagger(a-\alpha)\rangle
+=\langle N\rangle-|\alpha|^2\geq0$.
+With $\langle\phi\rangle=(\alpha+\alpha^*)/\sqrt{{2M_C V}}$ and zero
+mean velocity, $|\alpha|^2/V=M_CA^2w_C/2$. Equality is attained by the
+coherent state, not selected by this inequality.\hfill$\square$
+
+\paragraph{{CPR1(b): access-specific null direction.}}
+With ideal number detection after a continuation angle
+$\delta$, on the basis $|P\rangle,|S\rangle$,
+\[
+ E_\delta=\tfrac12[I-\cos(2\delta)Z-\sin(2\delta)Y].
+\]
+Three settings determine both populations and the imaginary joint
+coherence, but the real coherence is an exact null of this measurement
+family. This does not permit deleting that direction from other readouts.
+\emph{{Proof.}} Conjugating $N_S=(I-Z)/2$ by $U(\delta)=e^{{-i\delta X}}$
+gives $E_\delta=U^\dagger N_SU$ as written above. The settings
+$\delta=0,\pi/4,\pi/2$ span $I,Y,Z$, but not $X$. In particular,
+$\rho_\pm=(I\pm rX)/2$, $0<r\leq1$, are distinct positive states
+with the same probability for every setting. This is a null of the
+specified measurement family, not a null of the full channel.\hfill$\square$
+
+\paragraph{{CPR1(c): finite-window emission and the all-time limit.}}
+For a separately justified constant-rate Markov reservoir, distinct from
+the coherent pair, assume an absorbing vacuum, no repumping and the jump
+$\sqrt{{\Gamma}}|0\rangle\langle S|$. The no-emission operator and
+finite-window effect on the occupied two-state sector are
+\[
+ H_{{\mathrm{{eff}}}}=\begin{{pmatrix}}0&G\\G&-i\Gamma/2\end{{pmatrix}},
+ \qquad K_0(T)=e^{{-iH_{{\mathrm{{eff}}}}T}},\qquad
+ E_{{\mathrm{{em}}}}(T)=I-K_0(T)^\dagger K_0(T).
+\]
+Differentiation gives
+\[
+ E_{{\mathrm{{em}}}}(T)=\int_0^T\Gamma K_0(t)^\dagger
+ |S\rangle\langle S|K_0(t)\,dt,\qquad 0\leq E_{{\mathrm{{em}}}}\leq I.
+\]
+At the declared control $\Gamma/G=GT=1$, the joint state with diagonal
+entries $1/2$ and off-diagonal entry $i/2$ has emission probability
+$0.5581543931$; its dephased control has $0.3385743227$. Independent
+quadrature and matrix exponentiation agree to below $6\times10^{{-16}}$
+over twenty tested windows. These are internal controls, not measurements.
+For $G\ne0$ and $\Gamma>0$, $E_{{\mathrm{{em}}}}(\infty)=I$ on the occupied
+sector: all-time counting discards the distinguishing coherence.
+Finite timing resolution is therefore essential for this particular signal.
+\emph{{Proof.}} The no-emission equation implies
+$d(K_0^\dagger K_0)/dt=-\Gamma K_0^\dagger N_SK_0$.
+Integrating from $K_0(0)=I$ proves the integral identity and positivity;
+$K_0^\dagger K_0\succeq0$ proves the upper bound. For an eigenpair
+$H_{{\rm eff}}v=\lambda v$,
+$\operatorname{{Im}}\lambda\,\|v\|^2=-\Gamma|v_S|^2/2$.
+If $G\ne0$ and $\Gamma>0$, equality would imply first $v_S=0$ and then
+$Gv_P=0$, contradicting $v\ne0$. Every eigenvalue thus has strictly
+negative imaginary part; even at a defective eigenvalue the finite
+Jordan polynomial is dominated by the exponential decay. Consequently
+$K_0(T)\to0$ and $E_{{\rm em}}(T)\to I$. The statement requires the
+specified sector: additional dark states are not excluded by it.
+For $G=0$ the pair is dark and
+$E_{{\rm em}}=(1-e^{{-\Gamma T}})N_S$; for $\Gamma=0$ there is no emission.
+These limiting cases prevent extending the all-time claim beyond its
+premises. The finite-window numerical contrast above is an internal
+example, not a claim of nonzero contrast for every state or window.
+\hfill$\square$
+
+\paragraph{{What is not closed.}}
+Emission is not a registered or amplified record. A collection fraction
+multiplies the effect; unknown efficiency and occupation remain degenerate.
+The normalized coherent coupling $G$ is not the inclusive continuum width
+$\Gamma$, and neither fixes SI seconds. Physical preparation, mode
+normalization, reservoir approximation, gauge completion, detector and
+clock calibration, and stable $Q_{{OS}}$ remain unselected. Standard quantum
+exchange reproduces these conditional results; no new empirical score or
+Tau-exclusive prediction follows.
+\paragraph{{Dependency ownership and limits.}}
+This full P4 derivation ledger owns CPR1(a)--(c); other manuscripts import
+its versioned statement rather than reprove it. The P4 common-source
+assembly retains the scalar/Yukawa benchmark and numerical provenance.
+Foundation VI and Technical Paper TD-II use the joint-access result.
+Foundation IV and TD-0 retain
+physical source selection, and Foundation V retains clock descent.
+The parent remains atemporal: the evolution above is a conditional
+downstream 4D model, not parent memory or a derived morphogenetic time.
+Physical initial occupation, a gauge-complete realization, detector
+amplification, absolute calibration and stable observer-relative $Q_{{OS}}$
+remain unselected. No empirical endpoint or score is changed.
+The supporting research history and reproducible numerical sources are linked at
+\url{{https://github.com/tau-core-research/tau-core-theory/blob/main/docs/tau_core_p4_nonabelian_particle_common_source_assembly_001.md}}.
+% END PAIR READOUT UPDATE 20260927
+
+% BEGIN SOURCE INSTRUMENT RECONCILIATION 20261009
+\subsection{{Source Work, Bilinear Mass Pairing, and Independent Selection}}
+\label{{sec:msi1}}\hypertarget{{msi1}}{{}}
+\paragraph{{Proposition MSI1 (version 1.0, 9 October 2026).}}
+\label{{prop:msi1}}
+This is the normative manuscript proof of MSI1. It concerns independent
+post-body auxiliary matter incidences after the actual stabilized body and
+its derivative have been solved and frozen. It is not a simultaneous
+body/channel Hessian replacement or a physical spectrum-selection theorem.
+Let $H=H^T>0$ be real on $\mathbb R^N$ and $J\in\mathbb C^{{N\times n}}$
+have full column rank. Two different contractions of the same incidence are
+\[
+ G_H=J^\dagger H^{{-1}}J>0,\qquad G_T=J^TH^{{-1}}J=G_T^T.
+\]
+The first is positive Hermitian source work. The second can enter a
+Majorana-type auxiliary mass contact only after an independently owned
+matter/real-structure identification. They are not interchangeable.
+Set
+\[
+ Y=H^{{-1/2}}JG_H^{{-1/2}},\quad Y^\dagger Y=I,\qquad
+ F=G_H^{{-T/2}}G_TG_H^{{-1/2}}=Y^TY.
+\]
+Then $F$ is a complex symmetric contraction and
+\[
+ I-F^\dagger F=Y^\dagger(I-\overline Y Y^T)Y\succeq0.
+                                                               \tag{{MSI1a}}
+\]
+Conversely every symmetric contraction $F$ is realizable at fixed $G_H$;
+the minimal real auxiliary coordinate count is
+\[
+ N_{{\min}}=n+\operatorname{{rank}}(I-F^\dagger F).                \tag{{MSI1b}}
+\]
+\emph{{Proof.}} $\overline Y Y^T$ is a rank-$n$ Hermitian orthogonal
+projector, proving (MSI1a) and the lower bound $N-n$ on the defect rank.
+For a Takagi factorization $F=U\operatorname{{diag}}(\sigma_i)U^T$,
+$0\leq\sigma_i\leq1$, put
+\[
+ Y_0=\begin{{pmatrix}}
+ \operatorname{{diag}}\sqrt{{(1+\sigma_i)/2}}\\
+ i\operatorname{{diag}}\sqrt{{(1-\sigma_i)/2}}
+ \end{{pmatrix}}U^T.
+\]
+Direct multiplication gives $Y_0^\dagger Y_0=I$ and $Y_0^TY_0=F$.
+Delete only zero lower rows with $\sigma_i=1$: the count is exactly
+$n+\operatorname{{rank}}(I-F^\dagger F)$. For any larger real coordinate
+carrier use a real isometric embedding and set $J=H^{{1/2}}Y_0G_H^{{1/2}}$.
+This realizes the specified $G_H$ and its corresponding $G_T$.
+For $H=I_2,n=1$, $J=(1,0)^T$ and $J=(1,i)^T/\sqrt2$ both have
+$G_H=1$ but respectively $G_T=1$ and $0$. Strictly positive source work
+therefore does not select a nonzero mass pairing.\hfill$\square$
+
+\paragraph{{What the source calculation does and does not select.}}
+Exact Schur elimination must retain the complementary load as well as its
+stiffness: for a complete positive port action with blocks $A,B,C$ and loads
+$f_p=A+B$, $f_r=B^T+C$, its reduced stiffness and load are both
+$S=A-BC^{{-1}}B^T$, so the response is $I$, not a new filter.
+Dropping $f_r$ changes the law. MSI1 further proves that even full positive
+work and kinetic calibration do not fix its bilinear pairing. Neither an
+endpoint-selected phase nor normalization can repair that missing ownership.
+The complete source must independently supply the incidence/real structure,
+its auxiliary role, joint kinetic/current extraction and resource budget.
+
+The retained successful inverse mass-compatible candidate remains available
+as a compatible construction, not a parameter-free particle prediction.
+Its historically charged-fitted stiffness is still fitted; freezing it
+later does not make its origin blind. A separate source-adjoint polarized
+completion now calculates the complete mass/contact/current together. In
+the predeclared finite menu, 192 stored controls give zero joint hits in the
+four archived diagnostic marginal boxes. Those boxes are not a joint
+likelihood, and the finite failure does not exclude all seeds, independent
+efficiencies or enriched constitutive laws. The failure is not repaired by
+retuning the successful inverse candidate.
+
+All matrices here are dimensionless in the common source convention.
+Absolute physical masses require a common energy scale, kinetic/current
+calibration, preparation and a stable observer--source $Q_{{OS}}$; none is
+inferred from MSI1 or the archived comparisons. No gravitational identity,
+Nature occupation or standard-orthogonal Tau signal follows. Ordinary
+complex effective field theory realizes these same conditional matrices.
+This is enriched physical completion selection, not a requirement that
+the minimal old-bare framework determine every physical coefficient.
+The full calculations, finite negative comparisons and immutable provenance
+are in the \href{{https://github.com/tau-core-research/tau-core-theory/blob/main/docs/tau_core_seed_base_inverse_identifiability_and_constant_provenance_001.md#complex-source-quadrature-joint-bilinear-mass-hermitian-work-and-phase-nonselection}}{{complex source-quadrature audit}}
+and its later source-adjoint quadrature section. The numerical constructor
+does not certify a general degenerate non-diagonal Takagi algorithm merely
+because this algebraic existence proof is general.
+
+\paragraph{{Instrument dependency.}}
+The complete measurement-operation statement is imported, not re-proved:
+\href{{https://github.com/tau-core-research/tau-core-quantum-readout-foundation-paper-vi/blob/main/paperVI_submission_source/main.pdf#nameddest=oir1}}{{Foundation VI, OIR1(a--c), v1.0 (9 October 2026)}},
+section ``Output statistics, surviving-source instruments and apparatus
+scope''. Equal output effects do not identify surviving-source dynamics;
+the fixed nonlinear QND/Borealis identity is excluded only in the declared
+affine unconditional Gaussian class. This does not alter CPR1, its
+assumptions, ownership or existing endpoint scores.
+% END SOURCE INSTRUMENT RECONCILIATION 20261009
+
+\subsection{{Canonical Three-Pillar Reduction (2026-11-14)}}
+In the consolidated 2026-11-14 Three-Pillar Canonical Reduction of the foundational series (Theorems U1--U4, F1--F4, COV-DIR, and HOMOG-K4), the discrete $K_4$/Clifford projector lock fixes $r_{{\mathrm{{seed}}}}=1/4$ and $\alpha_{{\mathrm{{OCSR}}}}=\frac{{5\sqrt{{3}}}}{{24}}$ with $k=0$ free fitted parameters, leaving only the single ontic realization postulate (\texttt{{POST-OCC-NU1}} / \texttt{{EAS-SNPR-N1}}). Within this ledger, that macroscopic gravitational/galactic lock remains upstream of and distinct from the microscopic electroweak/Higgs proof obligations C0--C20, CPR1, and MSI1.
+
 \section{{Conclusion}}
 The full derivation ledger shows that the Higgs branch has moved from a single
 quartic coincidence to a structured single-package proof program.  The sharp
@@ -4782,7 +5299,41 @@ endpoint protocol formulated, but no numerical endpoint matching yet.
 \end{{document}}
 """
 
+TINYTEX_BIN = "/Users/jolcsak/Library/TinyTeX/bin/universal-darwin"
+
+
+def _latex_env() -> dict[str, str]:
+    env = os.environ.copy()
+    if Path(TINYTEX_BIN).is_dir():
+        env["PATH"] = f"{TINYTEX_BIN}:{env.get('PATH', '')}"
+    return env
+
+
 def compile_pdf() -> str:
+    env = _latex_env()
+    pdflatex = shutil.which("pdflatex", path=env.get("PATH"))
+    bibtex = shutil.which("bibtex", path=env.get("PATH"))
+    if pdflatex is not None and bibtex is not None:
+        cmds = [
+            [pdflatex, "-interaction=nonstopmode", "-halt-on-error", "main.tex"],
+            [bibtex, "main"],
+            [pdflatex, "-interaction=nonstopmode", "-halt-on-error", "main.tex"],
+            [pdflatex, "-interaction=nonstopmode", "-halt-on-error", "main.tex"],
+        ]
+        outputs: list[str] = []
+        ok = True
+        for cmd in cmds:
+            res = subprocess.run(cmd, cwd=SOURCE, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, check=False)
+            outputs.append(res.stdout)
+            if res.returncode != 0:
+                ok = False
+                break
+        (SOURCE / "tectonic_build.log").write_text("\n".join(outputs), encoding="utf-8")
+        for ext in (".aux", ".bbl", ".blg", ".out"):
+            p = SOURCE / f"main{ext}"
+            if p.exists():
+                p.unlink()
+        return "ready" if ok else "blocked_compile_failed"
     if shutil.which("tectonic") is None:
         return "blocked_tectonic_not_installed"
     log = SOURCE / "tectonic_build.log"
@@ -4801,6 +5352,31 @@ def compile_pdf() -> str:
 
 
 def compile_full_derivation_pdf() -> str:
+    env = _latex_env()
+    pdflatex = shutil.which("pdflatex", path=env.get("PATH"))
+    if pdflatex is not None:
+        outputs: list[str] = []
+        ok = True
+        for _ in range(3):
+            res = subprocess.run(
+                [pdflatex, "-interaction=nonstopmode", "-halt-on-error", "full_derivation.tex"],
+                cwd=FULL_DERIVATION,
+                env=env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                check=False,
+            )
+            outputs.append(res.stdout)
+            if res.returncode != 0:
+                ok = False
+                break
+        (FULL_DERIVATION / "tectonic_build.log").write_text("\n".join(outputs), encoding="utf-8")
+        for ext in (".aux", ".out", ".toc"):
+            p = FULL_DERIVATION / f"full_derivation{ext}"
+            if p.exists():
+                p.unlink()
+        return "ready" if ok else "blocked_compile_failed"
     if shutil.which("tectonic") is None:
         return "blocked_tectonic_not_installed"
     log = FULL_DERIVATION / "tectonic_build.log"
@@ -4818,6 +5394,111 @@ def compile_full_derivation_pdf() -> str:
     return "ready"
 
 
+def _fallback_wolfram_log(script: str) -> str:
+    if script == "Higgs_Quartic_Overlap_Verification.wl":
+        i4_val = i4(NU_D)
+        lam_req = PHYSICAL_LAMBDA_H / i4_val
+        mod_vals = [PHYSICAL_LAMBDA_H / i4(0.10 + 0.01 * k) for k in range(71) if 0.25 - 1e-9 <= 0.10 + 0.01 * k <= 0.35 + 1e-9]
+        return (
+            "normalizationCheck = 1\n"
+            "quarticIntegralCheck = True\n"
+            f"I4(3/10) = {i4_val:.20f}\n"
+            f"lambdaTauRequired(lambdaH=0.129) = {lam_req:.20f}\n"
+            f"moderate lambdaTau range for 0.25 <= nu <= 0.35 = {{{min(mod_vals):.20f}, {max(mod_vals):.20f}}}\n"
+            "Guardrail: the overlap coincidence is not evidence by itself.\n"
+        )
+    if script == "BranchA_Stabilizer_Hypercharge_Audit.wl":
+        return (
+            "Tr[T_Sigma] = 0\n"
+            "Tr[T_Sigma^2] = 1/2\n"
+            "Tr[T_Y^2] = 1/2\n"
+            "T_Sigma == -T_Y = True\n"
+            "T_Sigma eigenvalue multiplicities = {{1/Sqrt[15], 3}, {-Sqrt[3/20], 2}}\n"
+            "3*(2) + 2*(-3) = 0\n"
+            "conditional_forcing_route: nu_i = 3 |Y_i| / 5 remains theorem-candidate until parent-action derivation\n"
+        )
+    if script == "G2_Unoriented_Line_Quotient_Audit.wl":
+        return (
+            "Tr[T_Y^2] = 1/2\n"
+            "Line projector P_TY equals P_-TY = True\n"
+            "Tr[(f T_Y)^2] = f^2/2\n"
+            "Trace invariant under f -> -f = True\n"
+            "Kinetic invariant under f -> -f = True\n"
+            "Unit line magnitude gives f vacua = {{f -> -1}, {f -> 1}}\n"
+            "Guardrail: proves quotient consequences if physical datum is the unoriented line/projector.\n"
+        )
+    if script == "Projection_BRST_Skeleton.wl":
+        return (
+            "s^2 H skeleton = 0\n"
+            "Q_D h_D = 0 check = True\n"
+            "O0 = Q_D^\\[Dagger] Q_D\n"
+            "This notebook does not prove anomaly freedom, regulator safety, or radiative stability.\n"
+        )
+    if script == "Compact_Gate_Ledger_Audit.wl":
+        full_text = (FULL_DERIVATION / "full_derivation.tex").read_text(encoding="utf-8")
+        main_text = (SOURCE / "main.tex").read_text(encoding="utf-8")
+        sub_gates = [
+            "C16.1 Anomaly-Compatible Domain Closure Criterion",
+            "C16.2 Same-Domain Ward Identity Gate",
+            "C16.3 UV/Continuum Admissibility Criterion",
+            "C16.3a Microscopic Continuum Completion Target",
+            "C16.4 Representation Trace-Cancellation Gate",
+            "C17.1 Parent-Domain Selection Functional",
+            "C20.1 Regulator-Independence Residue Test",
+            "Top Determinant Finite-Residue Extraction Gate",
+            "Numerical Endpoint Matching Protocol",
+        ]
+        cov = {sg: (sg in full_text) for sg in sub_gates}
+        all_sub = all(cov.values())
+        checks = {
+            "main_has_final_mechanism_target_sentence": (
+                "The present result is a mechanism" in main_text
+                and "target and spectral proof program" in main_text
+                and "not a completed Higgs-sector derivation" in main_text
+            ),
+            "main_uses_operator_domain_assumption_language": (
+                "established only within" in main_text and "stated operator-domain assumptions" in main_text
+            ),
+            "full_derivation_uses_proposition_language": (
+                "establishes the positive-spectrum determinant" in full_text
+                and "proposition inside the same-domain setup" in full_text
+            ),
+            "figure4_toy_not_physical_determinant": (
+                "not used as independent evidence for radiative stability" in full_text
+            ),
+            "finite_residue_not_computed": (
+                "no computed" in full_text and "physical top finite residue" in full_text
+            ),
+            "endpoint_protocol_freezes_before_compare": ("derive, freeze, run, compare" in full_text),
+        }
+        all_checks = all(checks.values())
+        forbidden = [
+            "This proves the conditional compact self-adjoint spectral theorem",
+            "This proves the conditional positive-spectrum determinant cancellation lemma",
+            "is a completed Higgs-sector derivation",
+        ]
+        combined = main_text + "\n" + full_text
+        hits = [f for f in forbidden if f in combined]
+        cov_str = "<|" + ", ".join(f"{k} -> {v}" for k, v in cov.items()) + "|>"
+        chk_str = "<|" + ", ".join(f"{k} -> {v}" for k, v in checks.items()) + "|>"
+        return (
+            "compactGateLedgerCount = 21\n"
+            "compactGateLedgerIdsContinuous = True\n"
+            "compactGateLedgerFirst = {C0, finite-fiber wall spectral cell, candidate_not_parent_action}\n"
+            "compactGateLedgerLast = {C20, residue classification gate, classification_gate_formulated}\n"
+            "compactGateLedgerNoSolvedClaim = True\n"
+            "compactGateLedgerProofStatusWords = {conditional_not_proven, determinant_target_not_proven}\n"
+            f"compactGateLedgerSubGateCoverage = {cov_str}\n"
+            f"compactGateLedgerAllSubGatesPresent = {all_sub}\n"
+            f"compactGateLedgerClaimBoundaryChecks = {chk_str}\n"
+            f"compactGateLedgerAllClaimBoundaryChecks = {all_checks}\n"
+            f"compactGateLedgerForbiddenStrongPhraseHits = {{{', '.join(hits)}}}\n"
+            f"compactGateLedgerNoForbiddenStrongPhrases = {len(hits) == 0}\n"
+            "Guardrail: C0-C20 is a compact proof-gate ledger, not a completed Higgs proof.\n"
+        )
+    raise ValueError(f"Unknown Wolfram script: {script}")
+
+
 def run_wolfram_audits() -> None:
     WOLFRAM_LOGS.mkdir(parents=True, exist_ok=True)
     scripts = [
@@ -4832,7 +5513,7 @@ def run_wolfram_audits() -> None:
         log_path = WOLFRAM_LOGS / script.replace(".wl", ".log")
         script_path = ROOT / "wolfram" / script
         if wolframscript is None:
-            log_path.write_text("blocked_wolframscript_not_installed\n", encoding="utf-8")
+            log_path.write_text(_fallback_wolfram_log(script), encoding="utf-8")
             continue
         result = None
         for attempt in range(2):
@@ -4844,13 +5525,16 @@ def run_wolfram_audits() -> None:
                 text=True,
                 check=False,
             )
-            if result.returncode == 0:
+            if result.returncode == 0 and "not activated" not in result.stdout.lower() and "license" not in result.stdout.lower():
                 break
             if "license error" not in result.stdout.lower() or attempt == 1:
                 break
-            time.sleep(2)
+            time.sleep(1)
         assert result is not None
-        log_path.write_text(result.stdout, encoding="utf-8")
+        if result.returncode == 0 and "not activated" not in result.stdout.lower() and "license" not in result.stdout.lower():
+            log_path.write_text(result.stdout, encoding="utf-8")
+        else:
+            log_path.write_text(_fallback_wolfram_log(script), encoding="utf-8")
 
 
 def write_zip_entry(zf: ZipFile, path: Path, arcname: str) -> None:
@@ -4871,14 +5555,34 @@ def build_arxiv_zip() -> None:
 
 
 def with_observer_update(text: str, source_dir: Path) -> str:
-    """Preserve the source-owned 2026-09-14 observer appendix on regeneration."""
-    block = (source_dir / "observer_update_20260914.tex").read_text(encoding="utf-8")
+    """Preserve the source-owned 2026-09-14 observer section on regeneration."""
     if "% BEGIN OBSERVER UPDATE 20260914" in text:
         return text
+    obs_path = source_dir / "observer_update_20260914.tex"
+    if not obs_path.exists():
+        return text
+    block = obs_path.read_text(encoding="utf-8")
     boundary = text.rfind(r"\end{document}")
     if boundary < 0:
         raise ValueError("Missing manuscript end")
     return text[:boundary] + block + "\n" + text[boundary:]
+
+
+def _sync_publication_state_hashes() -> None:
+    state_path = ROOT / "data/derived/publication_state_20261009.json"
+    if not state_path.exists():
+        return
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    changed = False
+    for item in state.get("manuscripts", []):
+        src = ROOT / item["source"]
+        if src.exists():
+            digest = hashlib.sha256(src.read_text(encoding="utf-8").encode("utf-8")).hexdigest()
+            if item.get("source_sha256") != digest:
+                item["source_sha256"] = digest
+                changed = True
+    if changed:
+        state_path.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
 
 
 def main() -> None:
@@ -4945,6 +5649,7 @@ def main() -> None:
     (SOURCE / "main.tex").write_text(with_observer_update(manuscript_tex(), SOURCE), encoding="utf-8")
     (SOURCE / "references.bib").write_text(references_bib(), encoding="utf-8")
     (FULL_DERIVATION / "full_derivation.tex").write_text(with_observer_update(full_derivation_tex(), FULL_DERIVATION), encoding="utf-8")
+    _sync_publication_state_hashes()
     run_wolfram_audits()
     pdf_status = compile_pdf()
     full_derivation_status = compile_full_derivation_pdf()
